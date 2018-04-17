@@ -5,7 +5,7 @@
 RF24 radio(3, 4);
 int data[2];
 
-int enG = 2;
+int enG1 = 8, enG2 = 9;
 
 int in1 = 46;
 int in2 = 47;
@@ -13,7 +13,7 @@ int in2 = 47;
 int in3 = 48;
 int in4 = 49;
 
-int valueX, valueY, valueSpeed = 250;
+int valueX, valueY, valueSpeed = 255, revValueSpeed = 100;
 
 void setup() {
   radio.begin();
@@ -26,7 +26,8 @@ void setup() {
 
 void loop() {
   if(radio.available()){
-    analogWrite(enG, valueSpeed);
+//    analogWrite(enG1, valueSpeed);
+//    analogWrite(enG2, valueSpeed);
     radio.read(&data, sizeof(data));
 
     valueX = data[0];
@@ -66,6 +67,8 @@ void loop() {
 }
 
 void forwardEngine(){
+  analogWrite(enG1, valueSpeed * 0.8);
+  analogWrite(enG2, valueSpeed * 0.8);
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
   
@@ -74,6 +77,8 @@ void forwardEngine(){
 }
 
 void backwardEngine(){
+  analogWrite(enG1, valueSpeed * 0.8);
+  analogWrite(enG2, valueSpeed * 0.8);
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
   
@@ -83,7 +88,10 @@ void backwardEngine(){
 
 
 void leftEngine(){
-  digitalWrite(in1, LOW);
+  analogWrite(enG1, revValueSpeed);
+  analogWrite(enG2, valueSpeed);
+  
+  digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
   
   digitalWrite(in3, LOW);
@@ -91,11 +99,14 @@ void leftEngine(){
 }
 
 void rightEngine(){
+  analogWrite(enG1, valueSpeed);
+  analogWrite(enG2, revValueSpeed);
+  
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
   
 //  
-  digitalWrite(in3, LOW);
+  digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
 }
 
