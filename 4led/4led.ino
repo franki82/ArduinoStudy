@@ -40,7 +40,7 @@ void setup(){
 //
 //  // Make a new time object to set the date and time.
 //  // Sunday, September 22, 2013 at 01:38:50.
-//  Time t(2018, 4, 2, 1, 42, 00, Time::kMonday);
+//  Time t(2018, 4, 30, 22, 15, 00, Time::kMonday);
 // 
 //  /* Set the time and date on the chip */
 //  rtc.time(t);
@@ -58,6 +58,8 @@ void loop(){
   buttonState = digitalRead(buttonPin);
   buttonDisableState = digitalRead(buttonPinDisable);
 
+  getHoursAndMinutes();
+
   if(soundSensorValue > 50){
     disableLed = 1;
     disableLight = 1;
@@ -65,7 +67,7 @@ void loop(){
     delay(500);
   }
   
-  if (buttonState == LOW){
+  if (buttonState == LOW && buttonDisableState == HIGH){
     readOtherValues = true;
     disableLight = - disableLight;
     delay(10);
@@ -73,11 +75,16 @@ void loop(){
     readOtherValues = false;
   }
 
-  if (buttonDisableState == LOW){
+  if (buttonDisableState == LOW && buttonState == HIGH){
     disableLed = - disableLed;
     disableLight = 1;
     delay(500);
   }
+
+//  if (buttonState == LOW && buttonDisableState == LOW){
+//    disableLight = - disableLight;
+//    delay(10);
+//  }
 
   if (disableLight == -1){
     digitalWrite(relayPort, LOW);
@@ -85,9 +92,13 @@ void loop(){
     digitalWrite(relayPort, HIGH);
   }
 
+  if (myHour == 6 && myMinutes == 0){
+    disableLed = -1;
+  }
+
   if (disableLed == -1){
   
-    getHoursAndMinutes();
+    //getHoursAndMinutes();
    
     int digitoneHour = myHour / 10;
     int digittwoHour = myHour % 10;
