@@ -12,7 +12,7 @@ float angle_x_gyro=0,angle_y_gyro=0,angle_z_gyro=0,angle_x_accel=0,angle_y_accel
 // *********************************************************************
 // Main Code
 void setup(){
-  Serial.begin(115200);
+  Serial.begin(9600);
   Wire.begin();
   MPU6050_ResetWake();
   MPU6050_SetGains(0,1);// Setting the lows scale
@@ -22,27 +22,27 @@ void setup(){
   
   
   
-  Serial.print("gyro_x_scalled");
-  Serial.print("\tgyro_y_scalled");
-  Serial.print("\tgyro_z_scalled");
-  
-  Serial.print("\taccel_x_scalled");
-  Serial.print("\taccel_y_scalled");
-  Serial.print("\taccel_z_scalled");
-  
-  Serial.print("\tangle_x_gyro");
-  Serial.print("\tangle_y_gyro");
-  Serial.print("\tangle_z_gyro");
-  
-  Serial.print("\tangle_x_accel");
-  Serial.print("\tangle_y_accel");
-  Serial.print("\tangle_z_accel");
-  
-  Serial.print("\tangle_x");
-  Serial.print("\tangle_y");
-  Serial.print("\tangle_z");
-  
-  Serial.println("\tLoad");
+//  Serial.print("gyro_x_scalled");
+//  Serial.print("\tgyro_y_scalled");
+//  Serial.print("\tgyro_z_scalled");
+//  
+//  Serial.print("\taccel_x_scalled");
+//  Serial.print("\taccel_y_scalled");
+//  Serial.print("\taccel_z_scalled");
+//  
+//  Serial.print("\tangle_x_gyro");
+//  Serial.print("\tangle_y_gyro");
+//  Serial.print("\tangle_z_gyro");
+//  
+//  Serial.print("\tangle_x_accel");
+//  Serial.print("\tangle_y_accel");
+//  Serial.print("\tangle_z_accel");
+//  
+//  Serial.print("\tangle_x");
+//  Serial.print("\tangle_y");
+//  Serial.print("\tangle_z");
+//  
+//  Serial.println("\tLoad");
 
   
     
@@ -70,36 +70,36 @@ void loop(){
 //  Serial.print("\t");
 //  Serial.print(gyro_y_scalled);
 //  Serial.print("\t");
-  Serial.print(gyro_z_scalled);
-  Serial.print("\t");
-
-
+//  Serial.print(gyro_z_scalled);
+//  Serial.print("\t");
+//
+//
 //  Serial.print(accel_x_scalled);
 //  Serial.print("\t");
 //  Serial.print(accel_y_scalled);
 //  Serial.print("\t");
-  Serial.print(accel_z_scalled);
-  Serial.print("\t");
+//  Serial.print(accel_z_scalled);
+//  Serial.print("\t");
  
 //  Serial.print(angle_x_gyro);
 //  Serial.print("\t");
 //  Serial.print(angle_y_gyro);
 //  Serial.print("\t");
-  Serial.print(angle_z_gyro);
-  Serial.print("\t"); 
+//  Serial.print(angle_z_gyro);
+//  Serial.print("\t"); 
    
 //  Serial.print(angle_x_accel);
 //  Serial.print("\t");
 //  Serial.print(angle_y_accel);
 //  Serial.print("\t");
-  Serial.print(angle_z_accel);
-  Serial.print("\t"); 
-
-
-//  Serial.print(angle_x);
-//  Serial.print("\t");
-//  Serial.print(angle_y);
-//  Serial.print("\t");
+//  Serial.print(angle_z_accel);
+//  Serial.print("\t"); 
+//
+//
+  Serial.print(angle_x);
+  Serial.print("\t");
+  Serial.print(angle_y);
+  Serial.print("\t");
   Serial.print(angle_z);
   Serial.print("\t");
   
@@ -109,9 +109,9 @@ void loop(){
 
 delay(2000);
   
-//  while((millis()-t) < dt){ // Making sure the cycle time is equal to dt
-//  // Do nothing
-//  }
+  while((millis()-t) < dt){ // Making sure the cycle time is equal to dt
+  // Do nothing
+  }
   
 
 }
