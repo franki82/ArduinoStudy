@@ -19,6 +19,7 @@ int in4 = 8;
 int valueX, valueY, valueSpeed = 255, revValueSpeed = 120, useCamera = -1;
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
+int centerPoint = 92, rightPoint = 5, leftPoint = 175, turnTimeout = 60;
 
 void setup() {
   Serial.begin(9600);
@@ -39,8 +40,9 @@ void setup() {
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
   servo1.attach(servoPin);
-  servo1.write(92);
-  delay(100);
+  delay(200);
+  servo1.write(centerPoint);
+  delay(200);
   servo1.detach();
 }
 
@@ -57,7 +59,7 @@ void loop() {
           servo1.detach();
           isServoAttached = false;
       }
-          
+
          if (abs(valueX)<8){
           valueX = 0;
         }
@@ -77,7 +79,7 @@ void loop() {
         }
     
         switch (valueY){
-        case 10: 
+        case 10:
             forwardEngine();
           break;
         case -10: 
@@ -123,7 +125,7 @@ void forwardEngine(){
   analogWrite(enG2, valueSpeed * 0.8);
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-  
+    
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
 }
@@ -194,12 +196,12 @@ void servoSlowBackward( Servo num, int startPos, int endPos, int time)
 void centerCamera(){
   if (isCameraCenter == false){
     if (isCameraLeft == true)
-      servoSlowBackward(servo1,175, 92, 60);
+      servoSlowBackward(servo1,leftPoint, centerPoint, turnTimeout);
       isCameraLeft = false;
       isCameraCenter = true;
     }
     if (isCameraRight == true){
-      servoSlowForward(servo1,5, 92, 60);
+      servoSlowForward(servo1,rightPoint, centerPoint, turnTimeout);
       isCameraRight = false;
       isCameraCenter = true;
     }
@@ -208,12 +210,12 @@ void centerCamera(){
 void leftCamera(){
   if (isCameraLeft == false){
     if (isCameraCenter == true){
-      servoSlowForward(servo1,92, 175, 60);
+      servoSlowForward(servo1,centerPoint, leftPoint, turnTimeout);
       isCameraCenter = false;
       isCameraLeft = true;
      }
     if (isCameraRight == true){
-      servoSlowForward(servo1,5, 175, 60);
+      servoSlowForward(servo1,rightPoint, leftPoint, turnTimeout);
       isCameraRight = false;
       isCameraLeft = true;
     }
@@ -223,12 +225,12 @@ void leftCamera(){
  void rightCamera(){
   if (isCameraRight == false){
     if (isCameraCenter == true){
-      servoSlowBackward(servo1,92, 5, 60);
+      servoSlowBackward(servo1,centerPoint, rightPoint, turnTimeout);
       isCameraCenter = false;
       isCameraRight = true;
      }
     if (isCameraLeft == true){
-      servoSlowBackward(servo1,175, 5, 60);
+      servoSlowBackward(servo1,leftPoint, rightPoint, turnTimeout);
       isCameraLeft = false;
       isCameraRight = true;
       }
