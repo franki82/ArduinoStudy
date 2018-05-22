@@ -19,7 +19,7 @@ int in4 = 8;
 int valueX, valueY, valueSpeed = 255, revValueSpeed = 120, useCamera = -1;
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
-int centerPoint = 92, rightPoint = 5, leftPoint = 175, turnTimeout = 60;
+int centerPoint = 94, rightPoint = 8, leftPoint = 180, turnTimeout = 60, currentPosition = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -43,6 +43,7 @@ void setup() {
   delay(200);
   servo1.write(centerPoint);
   delay(200);
+  currentPosition = centerPoint;
   servo1.detach();
 }
 
@@ -194,45 +195,27 @@ void servoSlowBackward( Servo num, int startPos, int endPos, int time)
 }
 
 void centerCamera(){
-  if (isCameraCenter == false){
-    if (isCameraLeft == true)
-      servoSlowBackward(servo1,leftPoint, centerPoint, turnTimeout);
-      isCameraLeft = false;
-      isCameraCenter = true;
-    }
-    if (isCameraRight == true){
-      servoSlowForward(servo1,rightPoint, centerPoint, turnTimeout);
-      isCameraRight = false;
-      isCameraCenter = true;
-    }
-}
-
-void leftCamera(){
-  if (isCameraLeft == false){
-    if (isCameraCenter == true){
-      servoSlowForward(servo1,centerPoint, leftPoint, turnTimeout);
-      isCameraCenter = false;
-      isCameraLeft = true;
-     }
-    if (isCameraRight == true){
-      servoSlowForward(servo1,rightPoint, leftPoint, turnTimeout);
-      isCameraRight = false;
-      isCameraLeft = true;
-    }
-  }
+  if (currentPosition > centerPoint){
+    servoSlowBackward(servo1,currentPosition, centerPoint-1, turnTimeout);
+  } else if (currentPosition < centerPoint){
+    servoSlowForward(servo1,currentPosition, centerPoint, turnTimeout);
+   }
+   currentPosition = centerPoint;
  }
 
- void rightCamera(){
-  if (isCameraRight == false){
-    if (isCameraCenter == true){
-      servoSlowBackward(servo1,centerPoint, rightPoint, turnTimeout);
-      isCameraCenter = false;
-      isCameraRight = true;
-     }
-    if (isCameraLeft == true){
-      servoSlowBackward(servo1,leftPoint, rightPoint, turnTimeout);
-      isCameraLeft = false;
-      isCameraRight = true;
-      }
-   }
+void leftCamera(){
+  if (currentPosition < leftPoint){
+     servo1.write(currentPosition);
+     delay(turnTimeout);
+     currentPosition++;
+  }  
+}
+
+
+void rightCamera(){
+  if (currentPosition > rightPoint){
+    servo1.write(currentPosition);
+    delay(turnTimeout);
+    currentPosition--;
+  }
 }
