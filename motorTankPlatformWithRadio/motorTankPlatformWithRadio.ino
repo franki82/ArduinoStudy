@@ -16,10 +16,10 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 255, revValueSpeed = 120, useCamera = -1;
+int valueX, valueY, valueSpeed = 255, revValueSpeed = 100, useCamera = -1;
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
-int centerPoint = 94, rightPoint = 8, leftPoint = 180, turnTimeout = 60, currentPosition = 0;
+int centerPoint = 95, rightPoint = 8, leftPoint = 180, turnTimeout = 60, currentPosition = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -198,7 +198,7 @@ void centerCamera(){
   if (currentPosition > centerPoint){
     servoSlowBackward(servo1,currentPosition, centerPoint-1, turnTimeout);
   } else if (currentPosition < centerPoint){
-    servoSlowForward(servo1,currentPosition, centerPoint, turnTimeout);
+    servoSlowForward(servo1,currentPosition, centerPoint+3, turnTimeout);
    }
    currentPosition = centerPoint;
  }
