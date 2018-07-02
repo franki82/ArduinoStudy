@@ -2,11 +2,14 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Servo.h>
+#include <Ultrasonic.h>
 
-RF24 radio(9, 10);
-int data[3];
-Servo servo1;
+RF24 radio(A0, A1);
+int data[4], dataTelemetry[2];
+Servo servo1, servo2;
+Ultrasonic ultrasonic(A2,A3);
 int servoPin = 3;
+int servoPin2 = 9;
 
 int enG1 = 5, enG2 = 6;
 
@@ -16,10 +19,13 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 255, revValueSpeed = 255, useCamera = -1; //set revValueSpeed = 100 for low batery
+int valueX, valueY, valueSpeed = 255, revValueSpeed = 255, useClaws = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
 int centerPoint = 93, rightPoint = 74, leftPoint = 131, turnTimeout = 30, currentPosition = 0;
+int cervoCenterSee = 97, servoRightSee = 32, servoLeftSee = 165, currentSeePosition = 0;
+unsigned long CTime01;
+unsigned long LTime01;
 
 void setup() {
   Serial.begin(9600);
@@ -30,6 +36,7 @@ void setup() {
   radio.setDataRate(RF24_1MBPS);
   radio.setPALevel(RF24_PA_HIGH);
   radio.openReadingPipe(1, 0x1234567895LL);
+  radio.openWritingPipe(0x1234567895LL);
   radio.startListening();
   
   pinMode(enG1, OUTPUT);
@@ -43,8 +50,13 @@ void setup() {
   delay(200);
   servo1.write(centerPoint);
   delay(200);
+  servo2.attach(servoPin2);
+  delay(200);
+  servo2.write(cervoCenterSee);
+  currentSeePosition = cervoCenterSee;
   currentPosition = centerPoint;
   servo1.detach();
+  servo2.detach();
 }
 
 void loop() {
@@ -54,10 +66,12 @@ void loop() {
     valueX = data[0];
     valueY = data[1];
     useCamera = data[2];
+    useClaws = data[3];
 
-    if (useCamera == -1){
+    if (useCamera == -1 && useClaws == -1){
       if (isServoAttached == true){
           servo1.detach();
+          servo2.detach();
           isServoAttached = false;
       }
 
@@ -71,7 +85,10 @@ void loop() {
         }
         
         switch (valueX){
-        case 10: 
+        case 10:
+          rightEngine();
+          break;
+        case 9: 
           rightEngine();
           break;
         case -10: 
@@ -87,11 +104,11 @@ void loop() {
             backwardEngine();
           break;
         }
-    } else{
+    } else if (useClaws == 1){
+        useCamera = -1;
         if (isServoAttached == false){
           servo1.attach(servoPin);
           isServoAttached = true;
-          //clawsToMedium();
           }
        if (abs(valueX)<8){
           valueX = 0;
@@ -107,7 +124,7 @@ void loop() {
           break;
         case -10: 
           closeClaws();
-          break;
+        break;
         }
     
         switch (valueY){
@@ -115,9 +132,47 @@ void loop() {
             clawsToMedium();
           break;
         }
+    } else if (useCamera == 1){
+        useClaws = -1;
+        if (isServoAttached == false){
+          servo2.attach(servoPin2);
+          isServoAttached = true;
+          }
+       if (abs(valueX)<8){
+          valueX = 0;
+        }
+
+        if (abs(valueY)<8){
+          valueY = 0;
+        }
+              
+        switch (valueX){
+        case 10: 
+          cameraToRight();
+          break;
+        case -10: 
+          cameraToLeft();
+          break;
+        }
+    
     }
    
   }
+
+  CTime01 = millis();
+    if (CTime01 >= (LTime01 +120)) //Периодичность отправки пакетов
+    {
+       Serial.println("----------write-telemetry------------");
+       int duration;
+       duration = ultrasonic.Ranging(CM);
+       Serial.println(duration);  
+       radio.stopListening();  //Перестаем слушать
+       dataTelemetry[0] = duration;
+       dataTelemetry[1] = cervoCenterSee - currentSeePosition;
+       radio.write(&dataTelemetry, sizeof(dataTelemetry)); // Отправляем ответ
+       radio.startListening();
+       LTime01 = CTime01;
+    }
 
 }
 
@@ -217,5 +272,21 @@ void openClaws(){
     servo1.write(currentPosition);
     delay(turnTimeout);
     currentPosition--;
+  }
+}
+
+void cameraToLeft(){
+  if (currentSeePosition < servoLeftSee){
+     servo2.write(currentSeePosition);
+     delay(turnTimeout);
+     currentSeePosition++;
+  }  
+}
+
+void cameraToRight(){
+  if (currentSeePosition > servoRightSee){
+    servo2.write(currentSeePosition);
+    delay(turnTimeout);
+    currentSeePosition--;
   }
 }
