@@ -23,9 +23,10 @@ int valueX, valueY, valueSpeed = 255, revValueSpeed = 255, useClaws = -1, useCam
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
 int centerPoint = 93, rightPoint = 74, leftPoint = 131, turnTimeout = 30, currentPosition = 0;
-int cervoCenterSee = 97, servoRightSee = 32, servoLeftSee = 165, currentSeePosition = 0;
+int cervoCenterSee = 90, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0;
 unsigned long CTime01;
 unsigned long LTime01;
+int distance;
 
 void setup() {
   Serial.begin(9600);
@@ -46,6 +47,7 @@ void setup() {
 
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
+
   servo1.attach(servoPin);
   delay(200);
   servo1.write(centerPoint);
@@ -62,6 +64,7 @@ void setup() {
 void loop() {
   if (radio.available()){
     radio.read(&data, sizeof(data));
+    distance = ultrasonic.Ranging(CM);
 
     valueX = data[0];
     valueY = data[1];
@@ -154,7 +157,11 @@ void loop() {
           cameraToLeft();
           break;
         }
-    
+        switch (valueY){
+        case 10: 
+            centerCamera();
+          break;
+        } 
     }
    
   }
@@ -163,11 +170,9 @@ void loop() {
     if (CTime01 >= (LTime01 +120)) //Периодичность отправки пакетов
     {
        Serial.println("----------write-telemetry------------");
-       int duration;
-       duration = ultrasonic.Ranging(CM);
-       Serial.println(duration);  
+       Serial.println(distance);  
        radio.stopListening();  //Перестаем слушать
-       dataTelemetry[0] = duration;
+       dataTelemetry[0] = distance;
        dataTelemetry[1] = cervoCenterSee - currentSeePosition;
        radio.write(&dataTelemetry, sizeof(dataTelemetry)); // Отправляем ответ
        radio.startListening();
@@ -290,3 +295,13 @@ void cameraToRight(){
     currentSeePosition--;
   }
 }
+
+void centerCamera(){
+  if (currentSeePosition > cervoCenterSee){
+    servoSlowBackward(servo2,currentSeePosition, cervoCenterSee, turnTimeout);
+  } else if (currentSeePosition < cervoCenterSee){
+    servoSlowForward(servo2,currentSeePosition, cervoCenterSee, turnTimeout);
+   }
+   currentSeePosition = cervoCenterSee;
+ }
+  
