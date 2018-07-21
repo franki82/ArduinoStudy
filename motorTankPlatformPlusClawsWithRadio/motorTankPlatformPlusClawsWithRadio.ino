@@ -6,10 +6,11 @@
 
 RF24 radio(A0, A1);
 int data[4], dataTelemetry[2];
-Servo servo1, servo2;
+Servo servo1, servo2, servo3;
 Ultrasonic ultrasonic(A2,A3);
-int servoPin = 3;
+int servoPin = 10;
 int servoPin2 = 9;
+int servoPin3 = 3;
 
 int enG1 = 5, enG2 = 6;
 
@@ -19,11 +20,15 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
+int trigPin = A2;
+int echoPin = A3;
+
 int valueX, valueY, valueSpeed = 255, revValueSpeed = 255, useClaws = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
 int centerPoint = 93, rightPoint = 74, leftPoint = 131, turnTimeout = 30, currentPosition = 0;
-int cervoCenterSee = 90, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0;
+int centerHandPoint = 90, downHandPoint = 55, upHandPoint = 135, currentHandPosition = 0;
+int cervoCenterSee = 86, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0;
 unsigned long CTime01;
 unsigned long LTime01;
 int distance;
@@ -59,6 +64,9 @@ void setup() {
   currentPosition = centerPoint;
   servo1.detach();
   servo2.detach();
+  servo3.attach(servoPin3);
+  servo3.write(centerHandPoint);
+  currentHandPosition = centerHandPoint;
 }
 
 void loop() {
@@ -132,7 +140,10 @@ void loop() {
     
         switch (valueY){
         case 10: 
-            clawsToMedium();
+            upHand();
+          break;
+        case -10: 
+            downHand();
           break;
         }
     } else if (useCamera == 1){
@@ -304,4 +315,20 @@ void centerCamera(){
    }
    currentSeePosition = cervoCenterSee;
  }
+
+ void downHand(){
+  if (currentHandPosition > downHandPoint){
+    servo3.write(currentHandPosition);
+    delay(turnTimeout);
+    currentHandPosition--;
+  }
+}
+
+void upHand(){
+  if (currentHandPosition < upHandPoint){
+     servo3.write(currentHandPosition);
+     delay(turnTimeout);
+     currentHandPosition++;
+  }  
+}
   
