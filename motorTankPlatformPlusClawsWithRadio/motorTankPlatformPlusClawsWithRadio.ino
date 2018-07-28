@@ -5,7 +5,7 @@
 #include <Ultrasonic.h>
 
 RF24 radio(A0, A1);
-int data[4], dataTelemetry[2];
+int data[5], dataTelemetry[2];
 Servo servo1, servo2, servo3;
 Ultrasonic ultrasonic(A2,A3);
 int servoPin = 10;
@@ -23,12 +23,12 @@ int in4 = 8;
 int trigPin = A2;
 int echoPin = A3;
 
-int valueX, valueY, valueSpeed = 255, revValueSpeed = 255, useClaws = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
+int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, useClaws = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
-int centerPoint = 93, rightPoint = 74, leftPoint = 131, turnTimeout = 30, currentPosition = 0;
-int centerHandPoint = 90, downHandPoint = 55, upHandPoint = 135, currentHandPosition = 0;
-int cervoCenterSee = 86, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0;
+int centerPoint = 93, rightPoint = 75, leftPoint = 128, turnTimeout = 30, currentPosition = 0; //claws
+int centerHandPoint = 85, downHandPoint = 53, upHandPoint = 117, currentHandPosition = 0; //hand
+int cervoCenterSee = 86, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0; //camera
 unsigned long CTime01;
 unsigned long LTime01;
 int distance;
@@ -60,12 +60,14 @@ void setup() {
   servo2.attach(servoPin2);
   delay(200);
   servo2.write(cervoCenterSee);
+  delay(200);
   currentSeePosition = cervoCenterSee;
   currentPosition = centerPoint;
   servo1.detach();
   servo2.detach();
   servo3.attach(servoPin3);
   servo3.write(centerHandPoint);
+  delay(200);
   currentHandPosition = centerHandPoint;
 }
 
@@ -78,6 +80,9 @@ void loop() {
     valueY = data[1];
     useCamera = data[2];
     useClaws = data[3];
+    valueSpeed = data[4];
+    revValueSpeed = data[4];
+    
 
     if (useCamera == -1 && useClaws == -1){
       if (isServoAttached == true){
@@ -178,14 +183,14 @@ void loop() {
   }
 
   CTime01 = millis();
-    if (CTime01 >= (LTime01 +120)) //Периодичность отправки пакетов
+    if (CTime01 >= (LTime01 +120)) //Period to send
     {
        Serial.println("----------write-telemetry------------");
        Serial.println(distance);  
-       radio.stopListening();  //Перестаем слушать
+       radio.stopListening();  //Stop listen
        dataTelemetry[0] = distance;
        dataTelemetry[1] = cervoCenterSee - currentSeePosition;
-       radio.write(&dataTelemetry, sizeof(dataTelemetry)); // Отправляем ответ
+       radio.write(&dataTelemetry, sizeof(dataTelemetry)); // Send data
        radio.startListening();
        LTime01 = CTime01;
     }
@@ -309,7 +314,7 @@ void cameraToRight(){
 
 void centerCamera(){
   if (currentSeePosition > cervoCenterSee){
-    servoSlowBackward(servo2,currentSeePosition, cervoCenterSee, turnTimeout);
+    servoSlowBackward(servo2,currentSeePosition, cervoCenterSee-2, turnTimeout);
   } else if (currentSeePosition < cervoCenterSee){
     servoSlowForward(servo2,currentSeePosition, cervoCenterSee, turnTimeout);
    }

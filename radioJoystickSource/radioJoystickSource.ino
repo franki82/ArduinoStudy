@@ -4,7 +4,7 @@
 #include <Adafruit_SSD1306.h>
 
 RF24 radio(A2, A3);
-int data[4], dataTelemetry[2];
+int data[5], dataTelemetry[2];
 Adafruit_SSD1306 display(4);
 
 int xPin = A1;
@@ -17,12 +17,14 @@ int buttonStatePin = 8, buttonState = 0, useCamera = -1;
 int buttonClawsPin = 7, buttonClawsState = 0, useClaws = -1;
 unsigned long CTime01;
 unsigned long LTime01;
+int speedPin = A6, mySpeed = 0;
 
 void setup() {
   Serial.begin(9600);
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   pinMode(buttonStatePin, INPUT_PULLUP);
   pinMode(buttonClawsPin, INPUT_PULLUP);
+  pinMode(speedPin, INPUT);
   radio.begin();
   radio.setChannel(5);
   radio.setDataRate(RF24_1MBPS);
@@ -36,6 +38,7 @@ void loop() {
   yPosition = analogRead(yPin);
   buttonState = digitalRead(buttonStatePin);
   buttonClawsState = digitalRead(buttonClawsPin);
+  mySpeed = 255-analogRead(speedPin)/4;
 
   if (buttonState == LOW){
     useCamera = -useCamera;
@@ -43,8 +46,9 @@ void loop() {
   }
 
   if (buttonClawsState == LOW){
-    useClaws = -useClaws;
-    delay(500);
+    useClaws = 1;
+  } else if (buttonClawsState == HIGH){
+    useClaws = -1;
   }
   
   if (xPosition==515){
@@ -67,10 +71,11 @@ void loop() {
   data[1] = yValueToOut;
   data[2] = useCamera;
   data[3] = useClaws;
+  data[4] = mySpeed;
   radio.write(&data, sizeof(data));
     
   CTime01 = millis();
-  if (CTime01 >= (LTime01 +100)) //Периодичность отправки пакетов
+  if (CTime01 >= (LTime01 +100)) //read pokets period
   {
      int duration, angleSee;
      radio.startListening();
@@ -85,13 +90,27 @@ void loop() {
         display.clearDisplay();
         display.setTextColor(WHITE);
         display.setCursor(0,0);
-        display.setTextSize(2);
-        display.print("Dist:");
+        display.setTextSize(1);
+        display.print("Distance: ");
         display.print(duration);
-        display.setCursor(0,17);
-        display.setTextSize(2);
-        display.print("Ang:");
+        display.setCursor(0,9);
+        display.setTextSize(1);
+        display.print("Ult Angle: ");
         display.print(angleSee);
+        display.setCursor(0,17);
+        display.setTextSize(1);
+        display.print("Speed: ");
+        display.print(mySpeed);
+        display.setCursor(0,25);
+        display.setTextSize(1);
+        display.print("Is Active: ");
+        if (useCamera == -1 && useClaws == -1){
+          display.print("movement");
+        } else if (useClaws == 1){
+          display.print("claws");
+        } else if (useCamera == 1){
+          display.print("ult view");
+        }
         display.display();
      }
      LTime01 = CTime01;
