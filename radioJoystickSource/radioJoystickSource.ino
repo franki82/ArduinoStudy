@@ -4,7 +4,7 @@
 #include <Adafruit_SSD1306.h>
 
 RF24 radio(A2, A3);
-int data[5], dataTelemetry[2];
+int data[5], dataTelemetry[4];
 Adafruit_SSD1306 display(4);
 
 int xPin = A1;
@@ -26,7 +26,7 @@ void setup() {
   pinMode(buttonClawsPin, INPUT_PULLUP);
   pinMode(speedPin, INPUT);
   radio.begin();
-  radio.setChannel(5);
+  radio.setChannel(100);
   radio.setDataRate(RF24_1MBPS);
   radio.setPALevel(RF24_PA_HIGH);
   radio.openWritingPipe(0x1234567895LL);
@@ -75,14 +75,16 @@ void loop() {
   radio.write(&data, sizeof(data));
     
   CTime01 = millis();
-  if (CTime01 >= (LTime01 +100)) //read pokets period
+  if (CTime01 >= (LTime01 +50)) //read pokets period
   {
-     int duration, angleSee;
+     int duration, angleSee, handPosition, clawsPosition;
      radio.startListening();
      delay(20);
      radio.read(&dataTelemetry, sizeof(dataTelemetry));
      duration = dataTelemetry[0];
      angleSee = dataTelemetry[1];
+     handPosition = dataTelemetry[2];
+     clawsPosition = dataTelemetry[3];
      if (duration > 0){
         Serial.println("----------read-telemetry------------");
         Serial.println(duration);
@@ -93,14 +95,25 @@ void loop() {
         display.setTextSize(1);
         display.print("Distance: ");
         display.print(duration);
+        display.print(" / ");
+        display.print(angleSee);
+//        display.setCursor(0,9);
+//        display.setTextSize(1);
+//        display.print("Ult Angle: ");
+//        display.print(angleSee);
+//        display.setCursor(0,17);
+//        display.setTextSize(1);
+//        display.print("Speed: ");
+//        display.print(mySpeed);
+
         display.setCursor(0,9);
         display.setTextSize(1);
-        display.print("Ult Angle: ");
-        display.print(angleSee);
-        display.setCursor(0,17);
-        display.setTextSize(1);
-        display.print("Speed: ");
         display.print(mySpeed);
+        display.print("/");
+        display.print(handPosition);
+        display.print("/");
+        display.print(clawsPosition);
+
         display.setCursor(0,25);
         display.setTextSize(1);
         display.print("Is Active: ");

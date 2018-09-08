@@ -5,7 +5,7 @@
 #include <Ultrasonic.h>
 
 RF24 radio(A0, A1);
-int data[5], dataTelemetry[2];
+int data[5], dataTelemetry[4];
 Servo servo1, servo2, servo3;
 Ultrasonic ultrasonic(A2,A3);
 int servoPin = 10;
@@ -38,7 +38,7 @@ void setup() {
   delay(100);
 
   radio.begin();
-  radio.setChannel(5);
+  radio.setChannel(100);
   radio.setDataRate(RF24_1MBPS);
   radio.setPALevel(RF24_PA_HIGH);
   radio.openReadingPipe(1, 0x1234567895LL);
@@ -183,13 +183,15 @@ void loop() {
   }
 
   CTime01 = millis();
-    if (CTime01 >= (LTime01 +120)) //Period to send
+    if (CTime01 >= (LTime01 +70)) //Period to send
     {
        Serial.println("----------write-telemetry------------");
        Serial.println(distance);  
        radio.stopListening();  //Stop listen
        dataTelemetry[0] = distance;
        dataTelemetry[1] = cervoCenterSee - currentSeePosition;
+       dataTelemetry[2] = currentHandPosition;
+       dataTelemetry[3] = currentPosition;
        radio.write(&dataTelemetry, sizeof(dataTelemetry)); // Send data
        radio.startListening();
        LTime01 = CTime01;
