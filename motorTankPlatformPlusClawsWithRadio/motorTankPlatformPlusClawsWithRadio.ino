@@ -11,6 +11,7 @@ Ultrasonic ultrasonic(A2,A3);
 int servoPin = 10;
 int servoPin2 = 9;
 int servoPin3 = 3;
+int pressAnalogPin = A5;
 
 int enG1 = 5, enG2 = 6;
 
@@ -26,12 +27,13 @@ int echoPin = A3;
 int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, useClaws = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
-int centerPoint = 93, rightPoint = 75, leftPoint = 128, turnTimeout = 30, currentPosition = 0; //claws
+int centerPoint = 93, rightPoint = 75, leftPoint = 128, turnTimeout = 30, currentPosition = 0, pressLimit = 200; //claws
 int centerHandPoint = 85, downHandPoint = 53, upHandPoint = 117, currentHandPosition = 0; //hand
 int cervoCenterSee = 86, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0; //camera
 unsigned long CTime01;
 unsigned long LTime01;
 int distance;
+int pressReading;
 
 void setup() {
   Serial.begin(9600);
@@ -75,7 +77,8 @@ void loop() {
   if (radio.available()){
     radio.read(&data, sizeof(data));
     distance = ultrasonic.Ranging(CM);
-
+    pressReading = analogRead(pressAnalogPin);
+   
     valueX = data[0];
     valueY = data[1];
     useCamera = data[2];
@@ -185,8 +188,8 @@ void loop() {
   CTime01 = millis();
     if (CTime01 >= (LTime01 +70)) //Period to send
     {
-       Serial.println("----------write-telemetry------------");
-       Serial.println(distance);  
+       //Serial.println("----------write-telemetry------------");
+       //Serial.println(distance);  
        radio.stopListening();  //Stop listen
        dataTelemetry[0] = distance;
        dataTelemetry[1] = cervoCenterSee - currentSeePosition;
@@ -283,9 +286,13 @@ void clawsToMedium(){
 
 void closeClaws(){
   if (currentPosition < leftPoint){
+    if (pressReading < pressLimit){
+     //Serial.println("Press value");
+     //Serial.println(pressReading);
      servo1.write(currentPosition);
      delay(turnTimeout);
      currentPosition++;
+    }
   }  
 }
 
