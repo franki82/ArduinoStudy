@@ -101,35 +101,6 @@ void loop() {
           isServoAttached = false;
       }
 
-//         if (abs(valueX)<8){
-//          valueX = 0;
-//        }
-//    
-//        if (abs(valueY)<8){
-//          valueY = 0;
-//          stopEngine();
-//        }
-//        
-//        switch (valueX){
-//        case 10:
-//          rightEngine();
-//          break;
-//        case 9: 
-//          rightEngine();
-//          break;
-//        case -10: 
-//          leftEngine();
-//          break;
-//        }
-//    
-//        switch (valueY){
-//        case 10:
-//            forwardEngine();
-//          break;
-//        case -10: 
-//            backwardEngine();
-//          break;
-//        }
 
         if (valueX == 0 && valueY == 0){
             stopEngine();
@@ -209,7 +180,7 @@ void loop() {
 }
 
 void forwardEngine(){
-  analogWrite(enG1, valueSpeed * 0.8);
+  analogWrite(enG1, valueSpeed);
   analogWrite(enG2, valueSpeed * 0.8);
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
@@ -219,7 +190,7 @@ void forwardEngine(){
 }
 
 void backwardEngine(){
-  analogWrite(enG1, valueSpeed * 0.8);
+  analogWrite(enG1, valueSpeed);
   analogWrite(enG2, valueSpeed * 0.8);
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
