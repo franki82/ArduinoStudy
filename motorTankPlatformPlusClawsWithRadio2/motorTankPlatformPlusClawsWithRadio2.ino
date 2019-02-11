@@ -27,9 +27,9 @@ int echoPin = A3;
 int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, useClaws = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
-int centerPoint = 93, rightPoint = 75, leftPoint = 128, turnTimeout = 30, currentPosition = 0, pressLimit = 200; //claws
+int centerPoint = 93, rightPoint = 75, leftPoint = 128, turnTimeout = 30, currentPosition = 0, pressLimit = 400; //claws
 int centerHandPoint = 85, downHandPoint = 53, upHandPoint = 117, currentHandPosition = 0; //hand
-int cervoCenterSee = 86, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0; //camera
+int cervoCenterSee = 83, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0; //camera
 unsigned long CTime01;
 unsigned long LTime01;
 int distance;
@@ -74,7 +74,13 @@ void setup() {
 }
 
 void loop() {
-  distance = ultrasonic.Ranging(CM);
+  //Serial.println("Press value");
+  //Serial.println(pressReading);
+  int distance1=0, distance2=0, distance3=0;
+  distance1 = ultrasonic.Ranging(CM);
+  distance2 = ultrasonic.Ranging(CM);
+  distance3 = ultrasonic.Ranging(CM);
+  distance = (distance1 + distance2 + distance3)/3;
   pressReading = analogRead(pressAnalogPin);
 
   dataTelemetry[0] = distance;
@@ -101,35 +107,18 @@ void loop() {
           isServoAttached = false;
       }
 
-         if (abs(valueX)<8){
-          valueX = 0;
-        }
-    
-        if (abs(valueY)<8){
-          valueY = 0;
-          stopEngine();
-        }
-        
-        switch (valueX){
-        case 10:
-          rightEngine();
-          break;
-        case 9: 
-          rightEngine();
-          break;
-        case -10: 
-          leftEngine();
-          break;
-        }
-    
-        switch (valueY){
-        case 10:
+      if (valueX == 0 && valueY == 0){
+            stopEngine();
+      } else if (valueX == 0 && valueY == 10){
             forwardEngine();
-          break;
-        case -10: 
-            backwardEngine();
-          break;
-        }
+      } else if (valueX == 0 && valueY == -10){
+            backwardEngine();  
+      } else if (valueX == 10 && valueY == 0){
+            rightEngine();  
+      } else if (valueX == -10 && valueY == 0){
+            leftEngine();
+      }
+
     } else if (useClaws == 1){
         useCamera = -1;
         if (isServoAttached == false){
