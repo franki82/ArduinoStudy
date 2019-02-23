@@ -2,16 +2,11 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Servo.h>
-#include <Ultrasonic.h>
 
 RF24 radio(A0, A1);
 int data[5], dataTelemetry[4];
-Servo servo1, servo2, servo3;
-Ultrasonic ultrasonic(A2,A3);
-int servoPin = 10;
+Servo servo2;
 int servoPin2 = 9;
-int servoPin3 = 3;
-int pressAnalogPin = A5;
 
 int enG1 = 5, enG2 = 6;
 
@@ -21,19 +16,12 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int trigPin = A2;
-int echoPin = A3;
-
 int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, useClaws = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
-int centerPoint = 93, rightPoint = 75, leftPoint = 128, turnTimeout = 30, currentPosition = 0, pressLimit = 200; //claws
-int centerHandPoint = 85, downHandPoint = 53, upHandPoint = 117, currentHandPosition = 0; //hand
-int cervoCenterSee = 92, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0; //camera
+int cervoCenterSee = 90, servoRightSee = 20, servoLeftSee = 165, turnTimeout = 30, currentSeePosition = 0; //camera
 unsigned long CTime01;
 unsigned long LTime01;
-int distance;
-int pressReading;
 
 void setup() {
   Serial.begin(9600);
@@ -55,32 +43,20 @@ void setup() {
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
 
-  servo1.attach(servoPin);
-  delay(200);
-  servo1.write(centerPoint);
-  delay(200);
   servo2.attach(servoPin2);
-  delay(200);
+  delay(200); 
   servo2.write(cervoCenterSee);
   delay(200);
+  servo2.detach(); 
   currentSeePosition = cervoCenterSee;
-  currentPosition = centerPoint;
-  servo1.detach();
-  servo2.detach();
-  servo3.attach(servoPin3);
-  servo3.write(centerHandPoint);
-  delay(200);
-  currentHandPosition = centerHandPoint;
 }
 
 void loop() {
-  distance = ultrasonic.Ranging(CM);
-  pressReading = analogRead(pressAnalogPin);
-
-  dataTelemetry[0] = distance;
+  delay(10);
+  dataTelemetry[0] = 1;
   dataTelemetry[1] = cervoCenterSee - currentSeePosition;
-  dataTelemetry[2] = currentHandPosition;
-  dataTelemetry[3] = currentPosition;
+  dataTelemetry[2] = 1;
+  dataTelemetry[3] = 1;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
   
@@ -94,13 +70,11 @@ void loop() {
     revValueSpeed = data[4];
     
 
-    if (useCamera == -1 && useClaws == -1){
-      if (isServoAttached == true){
-          servo1.detach();
-          servo2.detach();
-          isServoAttached = false;
-      }
-
+    if (useCamera == -1){
+        if (isServoAttached == true){
+            servo2.detach();
+            isServoAttached = false;
+        }
 
         if (valueX == 0 && valueY == 0){
             stopEngine();
@@ -114,39 +88,8 @@ void loop() {
             leftEngine();
         }
         
-    } else if (useClaws == 1){
-        useCamera = -1;
-        if (isServoAttached == false){
-          servo1.attach(servoPin);
-          isServoAttached = true;
-          }
-       if (abs(valueX)<8){
-          valueX = 0;
-        }
-
-        if (abs(valueY)<8){
-          valueY = 0;
-        }
-              
-        switch (valueX){
-        case 10: 
-          openClaws();
-          break;
-        case -10: 
-          closeClaws();
-        break;
-        }
-    
-        switch (valueY){
-        case 10: 
-            upHand();
-          break;
-        case -10: 
-            downHand();
-          break;
-        }
-    } else if (useCamera == 1){
-        useClaws = -1;
+    } 
+    else if (useCamera == 1){
         if (isServoAttached == false){
           servo2.attach(servoPin2);
           isServoAttached = true;
@@ -169,15 +112,14 @@ void loop() {
         }
         switch (valueY){
         case 10: 
-            centerCamera();
+          centerCamera();
           break;
         } 
     }
    
   }
-
-
 }
+
 
 void forwardEngine(){
   analogWrite(enG1, valueSpeed);
@@ -252,36 +194,6 @@ void servoSlowBackward( Servo num, int startPos, int endPos, int time)
       }
 }
 
-void clawsToMedium(){
-  if (currentPosition > centerPoint){
-    servoSlowBackward(servo1,currentPosition, centerPoint, turnTimeout);
-  } else if (currentPosition < centerPoint){
-    servoSlowForward(servo1,currentPosition, centerPoint+8, turnTimeout);
-   }
-   currentPosition = centerPoint;
- }
-
-void closeClaws(){
-  if (currentPosition < leftPoint){
-    if (pressReading < pressLimit){
-     //Serial.println("Press value");
-     //Serial.println(pressReading);
-     servo1.write(currentPosition);
-     delay(turnTimeout);
-     currentPosition++;
-    }
-  }  
-}
-
-
-void openClaws(){
-  if (currentPosition > rightPoint){
-    servo1.write(currentPosition);
-    delay(turnTimeout);
-    currentPosition--;
-  }
-}
-
 void cameraToLeft(){
   if (currentSeePosition < servoLeftSee){
      servo2.write(currentSeePosition);
@@ -306,20 +218,4 @@ void centerCamera(){
    }
    currentSeePosition = cervoCenterSee;
  }
-
- void downHand(){
-  if (currentHandPosition > downHandPoint){
-    servo3.write(currentHandPosition);
-    delay(turnTimeout);
-    currentHandPosition--;
-  }
-}
-
-void upHand(){
-  if (currentHandPosition < upHandPoint){
-     servo3.write(currentHandPosition);
-     delay(turnTimeout);
-     currentHandPosition++;
-  }  
-}
   
