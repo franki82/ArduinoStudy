@@ -2,6 +2,8 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Servo.h>
+#include <Wire.h>
+#include <VL53L0X.h>
 
 RF24 radio(A0, A1);
 int data[5], dataTelemetry[4];
@@ -22,9 +24,11 @@ boolean isServoAttached = false;
 int cervoCenterSee = 90, servoRightSee = 20, servoLeftSee = 165, turnTimeout = 30, currentSeePosition = 0; //camera
 unsigned long CTime01;
 unsigned long LTime01;
+VL53L0X sensor;
 
 void setup() {
   Serial.begin(9600);
+  Wire.begin();
   delay(100);
 
   radio.begin();
@@ -49,11 +53,25 @@ void setup() {
   delay(200);
   servo2.detach(); 
   currentSeePosition = cervoCenterSee;
+
+  sensor.init();
+  sensor.setTimeout(500);
+  sensor.setSignalRateLimit(0.1);
+  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
+  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
+  sensor.setMeasurementTimingBudget(20000);
+  sensor.setMeasurementTimingBudget(40000);
 }
 
 void loop() {
-  delay(10);
-  dataTelemetry[0] = 1;
+  //delay(10);
+  int primaryDistanseMM = 0;
+  if (sensor.timeoutOccurred()) { 
+    primaryDistanseMM = 10; 
+  } else{
+    primaryDistanseMM = sensor.readRangeSingleMillimeters();
+  }
+  dataTelemetry[0] = primaryDistanseMM / 10;
   dataTelemetry[1] = cervoCenterSee - currentSeePosition;
   dataTelemetry[2] = 1;
   dataTelemetry[3] = 1;
