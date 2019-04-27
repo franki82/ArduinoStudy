@@ -56,22 +56,26 @@ void loop() {
   } else if (xPosition<515){
     xValueToOut = map(xPosition, 514, 0, 0, -10);
   } else if (xPosition>515){
-    xValueToOut = map(xPosition, 516, 1005, 0, 10);
+    xValueToOut = map(xPosition, 516, 1000, 0, 10);
   }
 
-  //Serial.print("X:");
-  //Serial.println(xValueToOut);
+//  Serial.print("XPos:");
+//  Serial.println(xPosition);
+//  Serial.print("X:");
+//  Serial.println(xValueToOut);
 
   if (yPosition==503){
     yValueToOut = 0;
   } else if (yPosition<503){
     yValueToOut = map(yPosition, 503, 0, 0, 10);
-  } else if (xPosition>503){
-    yValueToOut = map(yPosition, 504, 1005, 0, -10);
+  } else if (yPosition>503){
+    yValueToOut = map(yPosition, 504, 1000, 0, -10);
   }
 
-  //Serial.print("Y:");
-  //Serial.println(yValueToOut);
+//  Serial.print("YPos:");
+//  Serial.println(yPosition);
+//  Serial.print("Y:");
+//  Serial.println(yValueToOut);
 
   data[0] = xValueToOut;
   data[1] = yValueToOut;

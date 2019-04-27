@@ -48,6 +48,9 @@ void loop() {
   dataTelemetry[3] = 1;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
+
+//  Serial.print("Radio:");
+//  Serial.println(radio.available());
   
   if (radio.available()){
     radio.read(&data, sizeof(data));    
@@ -77,8 +80,30 @@ void loop() {
               revValueSpeed = 50;
             }
             leftEngine();
+        } else if (valueX == 0 && valueY > 2 && valueY < 10){
+            valueSpeed = valueSpeed * valueY / 10;
+            if (valueSpeed < 70){
+              valueSpeed = 70;
+              }
+            forwardEngine();
+        } else if (valueY == 0 && valueX > 2 && valueX < 10){
+            valueSpeed = valueSpeed * valueX / 10;
+            if (longTurn == 1){
+              revValueSpeed = 50;
+            }
+            rightEngine();  
+        } else if (valueY == 0 && valueX < -2 && valueX > -10){
+            int absValueX = abs(valueX);
+            valueSpeed = valueSpeed * absValueX / 10;
+            if (longTurn == 1){
+              revValueSpeed = 50;
+            }
+            leftEngine();
         }
-        
+
+//          Serial.print("Speed:");
+//          Serial.println(valueSpeed);
+
     } 
     
    
