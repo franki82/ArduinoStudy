@@ -18,12 +18,13 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
+int valueX, valueY, valueSpeed = 0, revValueSpeed = 50, correctTurn = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
 int cervoCenterSee = 90, servoRightSee = 20, servoLeftSee = 165, turnTimeout = 30, currentSeePosition = 0; //camera
 unsigned long CTime01;
 unsigned long LTime01;
+int leftMotorPersentage = 100, rightMotorPersentage = 100;
 VL53L0X sensor;
 
 void setup() {
@@ -56,10 +57,9 @@ void setup() {
 
   sensor.init();
   sensor.setTimeout(500);
-  sensor.setSignalRateLimit(0.1);
-  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 18);
-  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
-  sensor.setMeasurementTimingBudget(20000);
+  sensor.setSignalRateLimit(0.2);
+  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange, 16);
+  sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 12);
   sensor.setMeasurementTimingBudget(40000);
 }
 
@@ -73,8 +73,8 @@ void loop() {
   }
   dataTelemetry[0] = primaryDistanseMM / 10;
   dataTelemetry[1] = cervoCenterSee - currentSeePosition;
-  dataTelemetry[2] = 1;
-  dataTelemetry[3] = 1;
+  dataTelemetry[2] = leftMotorPersentage;
+  dataTelemetry[3] = rightMotorPersentage;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
   
@@ -83,12 +83,12 @@ void loop() {
     valueX = data[0];
     valueY = data[1];
     useCamera = data[2];
-    longTurn = data[3];
+    correctTurn = data[3];
     valueSpeed = data[4];
     revValueSpeed = data[4];
     
 
-    if (useCamera == -1){
+    if (useCamera == -1 && correctTurn == -1){
         if (isServoAttached == true){
             servo2.detach();
             isServoAttached = false;
@@ -101,15 +101,15 @@ void loop() {
         } else if (valueX == 0 && valueY == -10){
             backwardEngine();  
         } else if (valueX == 10 && valueY == 0){
-            if (longTurn == 1){
-              revValueSpeed = 50;
-            }
             rightEngine();  
         } else if (valueX == -10 && valueY == 0){
-            if (longTurn == 1){
-              revValueSpeed = 50;
-            }
             leftEngine();
+        } else if (valueX == 0 && valueY > 2 && valueY < 10){
+            valueSpeed = valueSpeed * valueY / 10;
+            if (valueSpeed < 70){
+              valueSpeed = 70;
+              }
+            forwardEngine();
         }
         
     } 
@@ -139,28 +139,36 @@ void loop() {
           centerCamera();
           break;
         } 
-    }
+    } else if (correctTurn == 1 && useCamera == -1){
+      if (valueX == 10 && valueY == 0){
+        rightEnginePowerChange();
+      } else if (valueX == -10 && valueY == 0){
+        leftEnginePowerChange();
+      } else if (valueX == 0 && valueY == 10){
+        enginePowerChangeToFull();
+      }
+    } 
    
   }
 }
 
 
 void forwardEngine(){
-  analogWrite(enG1, valueSpeed);
-  analogWrite(enG2, valueSpeed * 0.75);
+  analogWrite(enG1, valueSpeed * leftMotorPersentage / 100);
+  analogWrite(enG2, valueSpeed * rightMotorPersentage / 100);
+  
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-    
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
 }
 
 void backwardEngine(){
-  analogWrite(enG1, valueSpeed);
-  analogWrite(enG2, valueSpeed * 0.75);
+  analogWrite(enG1, valueSpeed * leftMotorPersentage / 100);
+  analogWrite(enG2, valueSpeed * rightMotorPersentage / 100);
+  
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
-  
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
 }
@@ -169,35 +177,21 @@ void backwardEngine(){
 void leftEngine(){
   analogWrite(enG1, revValueSpeed);
   analogWrite(enG2, valueSpeed);
-
-  if (longTurn == 1) {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
-  } else {  
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
-  }
+  
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
 }
 
 void rightEngine(){
   analogWrite(enG1, valueSpeed);
   analogWrite(enG2, revValueSpeed);
 
-  if (longTurn == 1) {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
-  } else{  
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
-  }
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
 }
 
 void stopEngine(){
@@ -206,7 +200,6 @@ void stopEngine(){
   
   digitalWrite(in1, LOW);
   digitalWrite(in2, LOW);
-  
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
 }
@@ -257,4 +250,28 @@ void centerCamera(){
    }
    currentSeePosition = cervoCenterSee;
  }
+
+ void rightEnginePowerChange(){
+    if (rightMotorPersentage <= 100 && rightMotorPersentage > 50){
+        rightMotorPersentage--;
+    } else {
+        rightMotorPersentage = 100;
+        delay(2000);
+    }
+  }
+
+  void leftEnginePowerChange(){
+    if (leftMotorPersentage <= 100 && leftMotorPersentage > 50){
+        leftMotorPersentage--;
+    } else {
+        leftMotorPersentage = 100;
+        delay(2000);
+    }
+  }
+
+  void enginePowerChangeToFull(){
+    rightMotorPersentage = 100;
+    leftMotorPersentage = 100;
+    delay(2000);
+  }
   
