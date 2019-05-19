@@ -18,7 +18,7 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, revValueSpeed = 50, correctTurn = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
+int valueX, valueY, valueSpeed = 0, revValueSpeed = 50, correctSpeed = -1, useCamera = -1;
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
 int cervoCenterSee = 90, servoRightSee = 20, servoLeftSee = 165, turnTimeout = 30, currentSeePosition = 0; //camera
@@ -64,7 +64,6 @@ void setup() {
 }
 
 void loop() {
-  //delay(10);
   int primaryDistanseMM = 0;
   if (sensor.timeoutOccurred()) { 
     primaryDistanseMM = 10; 
@@ -83,12 +82,11 @@ void loop() {
     valueX = data[0];
     valueY = data[1];
     useCamera = data[2];
-    correctTurn = data[3];
+    correctSpeed = data[3];
     valueSpeed = data[4];
-    revValueSpeed = data[4];
     
 
-    if (useCamera == -1 && correctTurn == -1){
+    if (useCamera == -1 && correctSpeed == -1){
         if (isServoAttached == true){
             servo2.detach();
             isServoAttached = false;
@@ -139,7 +137,7 @@ void loop() {
           centerCamera();
           break;
         } 
-    } else if (correctTurn == 1 && useCamera == -1){
+    } else if (correctSpeed == 1 && useCamera == -1){
       if (valueX == 10 && valueY == 0){
         rightEnginePowerChange();
       } else if (valueX == -10 && valueY == 0){
@@ -178,8 +176,8 @@ void leftEngine(){
   analogWrite(enG1, revValueSpeed);
   analogWrite(enG2, valueSpeed);
   
-  digitalWrite(in1, HIGH);
-  digitalWrite(in2, LOW);
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
 }
@@ -190,8 +188,8 @@ void rightEngine(){
 
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-  digitalWrite(in3, HIGH);
-  digitalWrite(in4, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
 }
 
 void stopEngine(){
