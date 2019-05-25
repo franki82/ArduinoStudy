@@ -4,7 +4,7 @@
 #include <Adafruit_SSD1306.h>
 
 RF24 radio(A2, A3);
-int data[5], dataTelemetry[4];
+int data[8], dataTelemetry[4];
 Adafruit_SSD1306 display(4);
 
 int xPin = A1;
@@ -18,12 +18,18 @@ int buttonClawsPin = 7, buttonClawsState = 0, useClaws = -1;
 unsigned long CTime01;
 unsigned long LTime01;
 int speedPin = A6, mySpeed = 0;
+int buttonState2Pin = 6, buttonState2State = 0, useState2 = -1;
+int buttonState3Pin = 5, buttonState3State = 0, useState3 = -1;
+int buttonState4Pin = 4, buttonState4State = 0, useState4 = -1;
 
 void setup() {
   Serial.begin(9600);
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   pinMode(buttonStatePin, INPUT_PULLUP);
   pinMode(buttonClawsPin, INPUT_PULLUP);
+  pinMode(buttonState2Pin, INPUT_PULLUP);
+  pinMode(buttonState3Pin, INPUT_PULLUP);
+  pinMode(buttonState4Pin, INPUT_PULLUP);
   pinMode(speedPin, INPUT);
   radio.begin();
   radio.enableAckPayload();
@@ -38,6 +44,9 @@ void loop() {
   yPosition = analogRead(yPin);
   buttonState = digitalRead(buttonStatePin);
   buttonClawsState = digitalRead(buttonClawsPin);
+  buttonState2State = digitalRead(buttonState2Pin);
+  buttonState3State = digitalRead(buttonState3Pin);
+  buttonState4State = digitalRead(buttonState4Pin);
   mySpeed = 255-analogRead(speedPin)/4;
 
   if (buttonState == LOW){
@@ -50,6 +59,25 @@ void loop() {
   } else if (buttonClawsState == HIGH){
     useClaws = -1;
   }
+
+  if (buttonState2State == LOW){
+    useState2 = 1;
+  } else if (buttonState2State == HIGH){
+    useState2 = -1;
+  }
+
+  if (buttonState3State == LOW){
+    useState3 = 1;
+  } else if (buttonState3State == HIGH){
+    useState3 = -1;
+  }
+
+  if (buttonState4State == LOW){
+    useState4 = 1;
+  } else if (buttonState4State == HIGH){
+    useState4 = -1;
+  }
+  
 
   if (xPosition==515){
     xValueToOut = 0;
@@ -82,6 +110,9 @@ void loop() {
   data[2] = useCamera;
   data[3] = useClaws;
   data[4] = mySpeed;
+  data[5] = useState2;
+  data[6] = useState3;
+  data[7] = useState4;
   radio.write(&data, sizeof(data));
 
   if ( radio.isAckPayloadAvailable() ) {
@@ -114,15 +145,21 @@ void loop() {
           display.setCursor(3,25);
           display.setTextSize(1);
           display.print("Is Active: ");
-          if (useCamera == -1 && useClaws == -1){
+          if (useCamera == -1 && useClaws == -1 && useState2 == -1 && useState3 == -1 && useState4 == -1){
             display.print("movement");
-          } else if (useClaws == 1){
-            display.print("claws");
-          } else if (useCamera == 1){
+          } else if (useClaws == 1 && useCamera == -1 && useState2 == -1 && useState3 == -1 && useState4 == -1){
+            display.print("claws-st1");
+          } else if (useCamera == 1 && useClaws == -1 && useState2 == -1 && useState3 == -1 && useState4 == -1){
             display.print("ult view");
+          } else if (useState2 == 1 && useCamera == -1 && useClaws == -1 && useState3 == -1 && useState4 == -1){
+            display.print("st2");
+          } else if (useState3 == 1 && useCamera == -1 && useClaws == -1 && useState2 == -1 && useState4 == -1){
+            display.print("st3");
+          } else if (useState4 == 1 && useCamera == -1 && useClaws == -1 && useState2 == -1 && useState3 == -1){
+            display.print("st4");
           }
           display.display();
        }
-  }  
+  }   
   
 }

@@ -4,7 +4,7 @@
 #include <Wire.h>
 
 RF24 radio(A0, A1);
-int data[5], dataTelemetry[4];
+int data[8], dataTelemetry[4];
 
 int enG1 = 5, enG2 = 6;
 
@@ -14,7 +14,10 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1; //set revValueSpeed = 100 for low batery
+int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1;
+int analogVoltmeterInput = A2;
+int vin = 1; 
+float R1 = 30000.0, R2 = 7500.0;
 
 
 void setup() {
@@ -37,20 +40,22 @@ void setup() {
 
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
+  pinMode(analogVoltmeterInput, INPUT);
 }
 
 void loop() {
-  delay(10); 
+  delay(10);
+  vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0)/(R2/(R1+R2));
   
   dataTelemetry[0] = 1;
   dataTelemetry[1] = 1;
-  dataTelemetry[2] = 1;
+  dataTelemetry[2] = vin;
   dataTelemetry[3] = 1;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
 
-//  Serial.print("Radio:");
-//  Serial.println(radio.available());
+//  Serial.print("Voltage:");
+//  Serial.println(vin);
   
   if (radio.available()){
     radio.read(&data, sizeof(data));    

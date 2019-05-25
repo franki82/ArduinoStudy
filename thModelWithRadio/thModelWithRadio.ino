@@ -6,7 +6,7 @@
 #include <VL53L0X.h>
 
 RF24 radio(A0, A1);
-int data[5], dataTelemetry[4];
+int data[8], dataTelemetry[4];
 Servo servo2;
 int servoPin2 = 9;
 
