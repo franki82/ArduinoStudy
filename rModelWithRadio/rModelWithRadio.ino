@@ -28,7 +28,7 @@ int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, useClaws = -1, useCamera 
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
 int centerPoint = 93, rightPoint = 75, leftPoint = 128, turnTimeout = 30, currentPosition = 0, pressLimit = 400; //claws
-int centerHandPoint = 85, downHandPoint = 53, upHandPoint = 117, currentHandPosition = 0; //hand
+int centerHandPoint = 85, downHandPoint = 45, upHandPoint = 130, currentHandPosition = 0; //hand
 int cervoCenterSee = 83, servoRightSee = 20, servoLeftSee = 165, currentSeePosition = 0; //camera
 unsigned long CTime01;
 unsigned long LTime01;
@@ -307,7 +307,7 @@ void centerCamera(){
   if (currentSeePosition > cervoCenterSee){
     servoSlowBackward(servo2,currentSeePosition, cervoCenterSee-2, turnTimeout);
   } else if (currentSeePosition < cervoCenterSee){
-    servoSlowForward(servo2,currentSeePosition, cervoCenterSee, turnTimeout);
+    servoSlowForward(servo2,currentSeePosition, cervoCenterSee+2, turnTimeout);
    }
    currentSeePosition = cervoCenterSee;
  }
