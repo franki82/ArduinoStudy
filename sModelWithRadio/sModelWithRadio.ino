@@ -14,11 +14,11 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1;
+int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1, correctSpeed = -1;
 int analogVoltmeterInput = A2;
 int vin = 1; 
 float R1 = 30000.0, R2 = 7500.0;
-
+int leftMotorPersentage = 100, rightMotorPersentage = 100;
 
 void setup() {
   Serial.begin(9600);
@@ -47,8 +47,8 @@ void loop() {
   delay(10);
   vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0)/(R2/(R1+R2));
   
-  dataTelemetry[0] = 1;
-  dataTelemetry[1] = 1;
+  dataTelemetry[0] = leftMotorPersentage;
+  dataTelemetry[1] = rightMotorPersentage;
   dataTelemetry[2] = vin;
   dataTelemetry[3] = 1;
 
@@ -65,9 +65,10 @@ void loop() {
     longTurn = data[3];
     valueSpeed = data[4];
     revValueSpeed = data[4];
+    correctSpeed = data[5];
     
 
-    if (useCamera == -1){
+    if (correctSpeed == -1){
         
         if (valueX == 0 && valueY == 0){
             stopEngine();
@@ -109,16 +110,23 @@ void loop() {
 //          Serial.print("Speed:");
 //          Serial.println(valueSpeed);
 
-    } 
-    
+    } else if (correctSpeed == 1){
+      if (valueX == 10 && valueY == 0){
+        rightEnginePowerChange();
+      } else if (valueX == -10 && valueY == 0){
+        leftEnginePowerChange();
+      } else if (valueX == 0 && valueY == 10){
+        enginePowerChangeToFull();
+      }
+    }     
    
   }
 }
 
 
 void forwardEngine(){
-  analogWrite(enG1, valueSpeed);
-  analogWrite(enG2, valueSpeed);
+  analogWrite(enG1, valueSpeed * leftMotorPersentage / 100);
+  analogWrite(enG2, valueSpeed * rightMotorPersentage / 100);
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
   
@@ -127,8 +135,8 @@ void forwardEngine(){
 }
 
 void backwardEngine(){
-  analogWrite(enG1, valueSpeed);
-  analogWrite(enG2, valueSpeed);
+  analogWrite(enG1, valueSpeed * leftMotorPersentage / 100);
+  analogWrite(enG2, valueSpeed * rightMotorPersentage / 100);
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
   
@@ -181,4 +189,28 @@ void stopEngine(){
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
 }
+
+void rightEnginePowerChange(){
+    if (rightMotorPersentage <= 100 && rightMotorPersentage > 50){
+        rightMotorPersentage--;
+    } else {
+        rightMotorPersentage = 100;
+        delay(2000);
+    }
+  }
+
+  void leftEnginePowerChange(){
+    if (leftMotorPersentage <= 100 && leftMotorPersentage > 50){
+        leftMotorPersentage--;
+    } else {
+        leftMotorPersentage = 100;
+        delay(2000);
+    }
+  }
+
+  void enginePowerChangeToFull(){
+    rightMotorPersentage = 100;
+    leftMotorPersentage = 100;
+    delay(2000);
+  }
   
