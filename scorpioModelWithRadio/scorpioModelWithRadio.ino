@@ -16,11 +16,12 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1, correctSpeed = -1;
+int valueX, valueY, valueSpeed = 0, lightTurn = -1, useCamera = -1;
 int analogVoltmeterInput = A2;
 int vin = 1;
 int distance;
 float R1 = 30000.0, R2 = 7500.0;
+int digitalPowerLed = 6;
 
 void setup() {
   Serial.begin(9600);
@@ -41,6 +42,7 @@ void setup() {
 
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
+  pinMode(digitalPowerLed, OUTPUT);
   pinMode(analogVoltmeterInput, INPUT);
 }
 
@@ -63,10 +65,14 @@ void loop() {
     valueX = data[0];
     valueY = data[1];
     useCamera = data[2];
-    longTurn = data[3];
+    lightTurn = data[3];
     valueSpeed = data[4];
-    revValueSpeed = data[4];
-    correctSpeed = data[5];
+
+    if(lightTurn == 1){
+      digitalWrite(digitalPowerLed, HIGH);
+    } else if (lightTurn == -1){
+       digitalWrite(digitalPowerLed, LOW);
+    }
 
     if (valueX == 0 && valueY == 0) {
       stopEngine();
