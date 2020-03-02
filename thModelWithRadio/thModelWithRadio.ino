@@ -7,7 +7,7 @@
 
 RF24 radio(A0, A1);
 int data[8], dataTelemetry[4];
-Servo servo2;
+Servo servoLidar;
 int servoPin2 = 9;
 
 int enG1 = 5, enG2 = 6;
@@ -18,7 +18,7 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, revValueSpeed = 50, correctSpeed = -1, useCamera = -1;
+int valueX, valueY, valueSpeed = 0, revValueSpeed = 255, correctSpeed = -1, useLidar = -1, correctTurn = -1, stOne = -1, stTwo = -1;
 boolean isCameraLeft = false, isCameraRight = false, isCameraCenter = true;
 boolean isServoAttached = false;
 int cervoCenterSee = 90, servoRightSee = 20, servoLeftSee = 165, turnTimeout = 30, currentSeePosition = 0; //camera
@@ -26,6 +26,9 @@ unsigned long CTime01;
 unsigned long LTime01;
 int leftMotorPersentage = 100, rightMotorPersentage = 100;
 VL53L0X sensor;
+int analogVoltmeterInput = A2;
+int vin = 1; 
+float R1 = 30000.0, R2 = 7500.0;
 
 void setup() {
   Serial.begin(9600);
@@ -48,11 +51,11 @@ void setup() {
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
 
-  servo2.attach(servoPin2);
+  servoLidar.attach(servoPin2);
   delay(200); 
-  servo2.write(cervoCenterSee);
+  servoLidar.write(cervoCenterSee);
   delay(200);
-  servo2.detach(); 
+  servoLidar.detach(); 
   currentSeePosition = cervoCenterSee;
 
   sensor.init();
@@ -70,10 +73,17 @@ void loop() {
   } else{
     primaryDistanseMM = sensor.readRangeSingleMillimeters();
   }
+  
   dataTelemetry[0] = primaryDistanseMM / 10;
   dataTelemetry[1] = cervoCenterSee - currentSeePosition;
-  dataTelemetry[2] = leftMotorPersentage;
-  dataTelemetry[3] = rightMotorPersentage;
+  if (correctTurn == 1){
+    dataTelemetry[2] = revValueSpeed;
+    dataTelemetry[3] = vin;
+    }
+  else {
+    dataTelemetry[2] = leftMotorPersentage;
+    dataTelemetry[3] = rightMotorPersentage;
+  }
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
   
@@ -81,14 +91,17 @@ void loop() {
     radio.read(&data, sizeof(data));    
     valueX = data[0];
     valueY = data[1];
-    useCamera = data[2];
+    useLidar = data[2];
     correctSpeed = data[3];
     valueSpeed = data[4];
+    correctTurn = data[5];
+    stOne = data[6];
+    stTwo = data[7];
     
 
-    if (useCamera == -1 && correctSpeed == -1){
+    if (useLidar == -1 && correctSpeed == -1 && correctTurn == -1 && stOne == -1 && stTwo == -1){
         if (isServoAttached == true){
-            servo2.detach();
+            servoLidar.detach();
             isServoAttached = false;
         }
 
@@ -111,9 +124,9 @@ void loop() {
         }
         
     } 
-    else if (useCamera == 1){
+    else if (useLidar == 1 && correctSpeed == -1 && correctTurn == -1 && stOne == -1 && stTwo == -1){
         if (isServoAttached == false){
-          servo2.attach(servoPin2);
+          servoLidar.attach(servoPin2);
           isServoAttached = true;
           }
        if (abs(valueX)<8){
@@ -137,7 +150,7 @@ void loop() {
           centerCamera();
           break;
         } 
-    } else if (correctSpeed == 1 && useCamera == -1){
+    } else if (useLidar == -1 && correctSpeed == 1 && correctTurn == -1 && stOne == -1 && stTwo == -1){
       if (valueX == 10 && valueY == 0){
         rightEnginePowerChange();
       } else if (valueX == -10 && valueY == 0){
@@ -145,7 +158,48 @@ void loop() {
       } else if (valueX == 0 && valueY == 10){
         enginePowerChangeToFull();
       }
-    } 
+    } else if (useLidar == -1 && correctSpeed == -1 && correctTurn == 1 && stOne == -1 && stTwo == -1){
+      vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0)/(R2/(R1+R2));
+      if (valueX == 10 && valueY == 0){
+        enlargeTurnValue();
+      } else if (valueX == -10 && valueY == 0){
+        decreaseTurnValue();
+      }
+    } else if (useLidar == -1 && correctSpeed == 1 && correctTurn == -1 && stOne == -1 && stTwo == 1){
+        if (valueX == 0 && valueY == 10){
+            Serial.println("20");
+        } else if (valueX == 0 && valueY == -10){
+            Serial.println("21");  
+        } else if (valueX == 10 && valueY == 0){
+            Serial.println("11"); 
+        } else if (valueX == -10 && valueY == 0){
+            Serial.println("10");
+        }
+    } else if (useLidar == -1 && correctSpeed == -1 && correctTurn == 1 && stOne == -1 && stTwo == 1){
+        if (valueX == 0 && valueY == 10){
+            Serial.println("31");
+        } else if (valueX == 0 && valueY == -10){
+            Serial.println("30");  
+        } else if (valueX == 10 && valueY == 0){
+            Serial.println("40"); 
+        } else if (valueX == -10 && valueY == 0){
+            Serial.println("41");
+        }
+    } else if (useLidar == -1 && correctSpeed == -1 && correctTurn == -1 && stOne == 1 && stTwo == 1){
+        if (valueX == 0 && valueY == 10){
+            Serial.println("50");
+        } else if (valueX == 0 && valueY == -10){
+            Serial.println("51");  
+        } else if (valueX == 10 && valueY == 0){
+            Serial.println("61"); 
+        } else if (valueX == -10 && valueY == 0){
+            Serial.println("60");
+        }
+    } else if (useLidar == -1 && correctSpeed == 1 && correctTurn == 1 && stOne == 1 && stTwo == 1){
+        if (valueX == 0 && valueY == -10){
+            Serial.println("77");  
+        }
+    }
    
   }
 }
@@ -176,8 +230,8 @@ void leftEngine(){
   analogWrite(enG1, revValueSpeed);
   analogWrite(enG2, valueSpeed);
   
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, HIGH);
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
 }
@@ -188,8 +242,8 @@ void rightEngine(){
 
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, HIGH);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
 }
 
 void stopEngine(){
@@ -226,7 +280,7 @@ void servoSlowBackward( Servo num, int startPos, int endPos, int time)
 
 void cameraToLeft(){
   if (currentSeePosition < servoLeftSee){
-     servo2.write(currentSeePosition);
+     servoLidar.write(currentSeePosition);
      delay(turnTimeout);
      currentSeePosition++;
   }  
@@ -234,7 +288,7 @@ void cameraToLeft(){
 
 void cameraToRight(){
   if (currentSeePosition > servoRightSee){
-    servo2.write(currentSeePosition);
+    servoLidar.write(currentSeePosition);
     delay(turnTimeout);
     currentSeePosition--;
   }
@@ -242,9 +296,9 @@ void cameraToRight(){
 
 void centerCamera(){
   if (currentSeePosition > cervoCenterSee){
-    servoSlowBackward(servo2,currentSeePosition, cervoCenterSee-2, turnTimeout);
+    servoSlowBackward(servoLidar,currentSeePosition, cervoCenterSee-2, turnTimeout);
   } else if (currentSeePosition < cervoCenterSee){
-    servoSlowForward(servo2,currentSeePosition, cervoCenterSee, turnTimeout);
+    servoSlowForward(servoLidar,currentSeePosition, cervoCenterSee, turnTimeout);
    }
    currentSeePosition = cervoCenterSee;
  }
@@ -271,5 +325,23 @@ void centerCamera(){
     rightMotorPersentage = 100;
     leftMotorPersentage = 100;
     delay(2000);
+  }
+
+  void enlargeTurnValue(){
+    if (revValueSpeed < 255 && revValueSpeed >= 0){
+        revValueSpeed++;
+    } else {
+        revValueSpeed = 255;
+        delay(2000);
+    }
+  }
+
+  void decreaseTurnValue(){
+    if (revValueSpeed <= 255 && revValueSpeed > 0){
+        revValueSpeed--;
+    } else {
+        revValueSpeed = 0;
+        delay(2000);
+    }
   }
   
