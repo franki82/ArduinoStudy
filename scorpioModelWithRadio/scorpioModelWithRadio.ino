@@ -6,7 +6,7 @@
 
 RF24 radio(A0, A1);
 Ultrasonic ultrasonic(A3, A4);
-int data[8], dataTelemetry[4];
+int data[8], dataTelemetry[5];
 
 int enG1 = 5;
 
@@ -51,9 +51,10 @@ void loop() {
   vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0) / (R2 / (R1 + R2));
 
   dataTelemetry[0] = distance;
-  dataTelemetry[1] = vin;
+  dataTelemetry[1] = 1;
   dataTelemetry[2] = 1;
   dataTelemetry[3] = 1;
+  dataTelemetry[4] = vin;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
 

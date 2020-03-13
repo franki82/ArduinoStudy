@@ -4,7 +4,7 @@
 #include <Wire.h>
 
 RF24 radio(A0, A1);
-int data[8], dataTelemetry[4];
+int data[8], dataTelemetry[5];
 
 int enG1 = 5, enG2 = 6;
 
@@ -49,8 +49,9 @@ void loop() {
   
   dataTelemetry[0] = leftMotorPersentage;
   dataTelemetry[1] = rightMotorPersentage;
-  dataTelemetry[2] = vin;
+  dataTelemetry[2] = 1;
   dataTelemetry[3] = 1;
+  dataTelemetry[4] = vin;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
 

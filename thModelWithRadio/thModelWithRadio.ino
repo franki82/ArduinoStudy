@@ -6,7 +6,7 @@
 #include <VL53L0X.h>
 
 RF24 radio(A0, A1);
-int data[8], dataTelemetry[4];
+int data[8], dataTelemetry[5];
 Servo servoLidar;
 int servoPin2 = 9;
 
@@ -73,17 +73,19 @@ void loop() {
   } else{
     primaryDistanseMM = sensor.readRangeSingleMillimeters();
   }
+  vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0)/(R2/(R1+R2));
   
   dataTelemetry[0] = primaryDistanseMM / 10;
   dataTelemetry[1] = cervoCenterSee - currentSeePosition;
   if (correctTurn == 1){
     dataTelemetry[2] = revValueSpeed;
-    dataTelemetry[3] = vin;
+    dataTelemetry[3] = 1;
     }
   else {
     dataTelemetry[2] = leftMotorPersentage;
     dataTelemetry[3] = rightMotorPersentage;
   }
+  dataTelemetry[4] = vin;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
   
@@ -159,7 +161,6 @@ void loop() {
         enginePowerChangeToFull();
       }
     } else if (useLidar == -1 && correctSpeed == -1 && correctTurn == 1 && stOne == -1 && stTwo == -1){
-      vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0)/(R2/(R1+R2));
       if (valueX == 10 && valueY == 0){
         enlargeTurnValue();
       } else if (valueX == -10 && valueY == 0){

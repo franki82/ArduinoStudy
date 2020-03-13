@@ -4,7 +4,7 @@
 #include <Adafruit_SSD1306.h>
 
 RF24 radio(A2, A3);
-int data[8], dataTelemetry[4];
+int data[8], dataTelemetry[5];
 Adafruit_SSD1306 display(4);
 
 int xPin = A1;
@@ -82,7 +82,7 @@ void loop() {
   if (xPosition==515){
     xValueToOut = 0;
   } else if (xPosition<515){
-    xValueToOut = map(xPosition, 514, 0, 0, -10);
+    xValueToOut = map(xPosition, 514, 3, 0, -10);
   } else if (xPosition>515){
     xValueToOut = map(xPosition, 516, 1000, 0, 10);
   }
@@ -95,7 +95,7 @@ void loop() {
   if (yPosition==503){
     yValueToOut = 0;
   } else if (yPosition<503){
-    yValueToOut = map(yPosition, 503, 0, 0, 10);
+    yValueToOut = map(yPosition, 503, 3, 0, 10);
   } else if (yPosition>503){
     yValueToOut = map(yPosition, 504, 1000, 0, -10);
   }
@@ -117,11 +117,12 @@ void loop() {
 
   if ( radio.isAckPayloadAvailable() ) {
     radio.read(&dataTelemetry, sizeof(dataTelemetry));
-    int duration, angleSee, handPosition, clawsPosition;
+    int duration, angleSee, handPosition, clawsPosition, voltageValue;
     duration = dataTelemetry[0];
     angleSee = dataTelemetry[1];
     handPosition = dataTelemetry[2];
     clawsPosition = dataTelemetry[3];
+    voltageValue = dataTelemetry[4];
     if (duration > 0){
           Serial.println("----------read-telemetry------------");
           Serial.println(duration);
@@ -141,14 +142,17 @@ void loop() {
           display.print(handPosition);
           display.print("/");
           display.print(clawsPosition);
-  
+          display.setCursor(3,17);
+          display.setTextSize(1);
+          display.print("Voltage: ");
+          display.print(voltageValue);
           display.setCursor(3,25);
           display.setTextSize(1);
-          display.print("Is Active: ");
+          display.print("Activ: ");
           if (useCamera == -1 && useClaws == -1 && useState2 == -1 && useState3 == -1 && useState4 == -1){
             display.print("movement");
           } else if (useClaws == 1 && useCamera == -1 && useState2 == -1 && useState3 == -1 && useState4 == -1){
-            display.print("claws-st1");
+            display.print("st1");
           } else if (useCamera == 1 && useClaws == -1 && useState2 == -1 && useState3 == -1 && useState4 == -1){
             display.print("ult view");
           } else if (useState2 == 1 && useCamera == -1 && useClaws == -1 && useState3 == -1 && useState4 == -1){

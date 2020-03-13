@@ -5,7 +5,7 @@
 #include <Ultrasonic.h>
 
 RF24 radio(A0, A1);
-int data[8], dataTelemetry[4];
+int data[8], dataTelemetry[5];
 Servo servo1, servo2, servo3;
 Ultrasonic ultrasonic(A2,A3);
 int servoPin = 10;
@@ -87,6 +87,7 @@ void loop() {
   dataTelemetry[1] = cervoCenterSee - currentSeePosition;
   dataTelemetry[2] = currentHandPosition;
   dataTelemetry[3] = currentPosition;
+  dataTelemetry[4] = 1;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
   
