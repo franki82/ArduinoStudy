@@ -2,6 +2,9 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Wire.h>
+#include <Servo.h>
+
+Servo servoHorizontal, servoVertical;
 
 RF24 radio(A0, A1);
 int data[8], dataTelemetry[5];
@@ -14,11 +17,15 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1, correctSpeed = -1;
+int valueX, valueY, valueSpeed = 0, revValueSpeed = 0, longTurn = -1, useCamera = -1, correctSpeed = -1, turnTurrel = -1, fireState = -1;
 int analogVoltmeterInput = A2;
 int vin = 1; 
 float R1 = 30000.0, R2 = 7500.0;
 int leftMotorPersentage = 100, rightMotorPersentage = 100;
+int analogPower = 3, lowPower = 20, maximumPower = 255;
+int horizontalServoPin = 9, horizontalServoStart = 90, horizontalCurrentPosition = 90, horizontalServoRightBorder = 15, horizontalServoLeftBorder = 175;
+int verticalServoPin = 10, verticalServoStart = 90, verticalCurrentPosition = 90, verticalServoRightBorder = 15, verticalServoLeftBorder = 175;
+int turnTimeout = 10;
 
 void setup() {
   Serial.begin(9600);
@@ -41,6 +48,18 @@ void setup() {
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
   pinMode(analogVoltmeterInput, INPUT);
+  
+  pinMode(analogPower, OUTPUT);
+  analogWrite(analogPower, 0);
+
+  servoHorizontal.attach(horizontalServoPin);
+  delay(500);
+  servoHorizontal.write(horizontalServoStart);
+  delay(500);
+  servoVertical.attach(verticalServoPin);
+  delay(500);
+  servoVertical.write(verticalServoStart);
+  delay(500);
 }
 
 void loop() {
@@ -67,9 +86,11 @@ void loop() {
     valueSpeed = data[4];
     revValueSpeed = data[4];
     correctSpeed = data[5];
+    turnTurrel = data[6];
+    fireState = data[7];
     
 
-    if (correctSpeed == -1){
+    if (correctSpeed == -1 && turnTurrel == -1){
         
         if (valueX == 0 && valueY == 0){
             stopEngine();
@@ -107,11 +128,12 @@ void loop() {
             }
             leftEngine();
         }
+        analogWrite(analogPower, 0);
 
 //          Serial.print("Speed:");
 //          Serial.println(valueSpeed);
 
-    } else if (correctSpeed == 1){
+    } else if (correctSpeed == 1 && turnTurrel == -1){
       if (valueX == 10 && valueY == 0){
         rightEnginePowerChange();
       } else if (valueX == -10 && valueY == 0){
@@ -119,7 +141,25 @@ void loop() {
       } else if (valueX == 0 && valueY == 10){
         enginePowerChangeToFull();
       }
-    }     
+      analogWrite(analogPower, 0);
+    } else if (correctSpeed == -1 && turnTurrel == 1){
+      if(fireState == 1){
+        analogWrite(analogPower, maximumPower);
+      } else if (fireState == -1){
+        analogWrite(analogPower, lowPower);
+      }
+      //move turrel code
+      if (valueX == -10 && valueY == 0){
+        horizontalCurrentPosition = turnToUp(servoHorizontal, horizontalCurrentPosition, horizontalServoLeftBorder);
+      } else if (valueX == 10 && valueY == 0){
+        horizontalCurrentPosition = turnToDown(servoHorizontal, horizontalCurrentPosition, horizontalServoRightBorder);
+      } else if (valueX == 0 && valueY == -10){
+        verticalCurrentPosition = turnToDown(servoVertical, verticalCurrentPosition, verticalServoRightBorder);
+      } else if (valueX == 0 && valueY == 10){
+        verticalCurrentPosition = turnToUp(servoVertical, verticalCurrentPosition, verticalServoLeftBorder);
+      }
+     
+    }
    
   }
 }
@@ -213,5 +253,23 @@ void rightEnginePowerChange(){
     rightMotorPersentage = 100;
     leftMotorPersentage = 100;
     delay(2000);
+  }
+
+  int turnToUp(Servo servo, int currentServoPosition, int servoLeftBorder){
+    if (currentServoPosition < servoLeftBorder){
+       servo.write(currentServoPosition);
+       delay(turnTimeout);
+       currentServoPosition++;
+    }
+    return currentServoPosition;  
+  }
+
+  int turnToDown(Servo servo, int currentServoPosition, int servoRightBorder){
+    if (currentServoPosition > servoRightBorder){
+      servo.write(currentServoPosition);
+      delay(turnTimeout);
+      currentServoPosition--;
+    }
+    return currentServoPosition;
   }
   
