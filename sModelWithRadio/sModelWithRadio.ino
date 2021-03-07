@@ -257,18 +257,18 @@ void rightEnginePowerChange(){
 
   int turnToUp(Servo servo, int currentServoPosition, int servoLeftBorder){
     if (currentServoPosition < servoLeftBorder){
+       currentServoPosition++;
        servo.write(currentServoPosition);
        delay(turnTimeout);
-       currentServoPosition++;
     }
     return currentServoPosition;  
   }
 
   int turnToDown(Servo servo, int currentServoPosition, int servoRightBorder){
     if (currentServoPosition > servoRightBorder){
+      currentServoPosition--;
       servo.write(currentServoPosition);
       delay(turnTimeout);
-      currentServoPosition--;
     }
     return currentServoPosition;
   }
