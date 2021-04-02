@@ -17,14 +17,13 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, isTurn = -1, isCorrectData = -1;
+int valueX, valueY, valueSpeed = 0, isTurn = -1, isCorrectRightServo = -1, isCorrectLeftServo = -1, isForvardEngine = -1;
 int analogVoltmeterInput = A2;
 int vin = 1;
 float R1 = 30000.0, R2 = 7500.0;
-int leftMotorPersentage = 100, rightMotorPersentage = 100;
 int rightServoPin = 9, rightServoStart = 90, rightCurrentPosition = 90, rightServoRightBorder = 35, rightServoLeftBorder = 145;
-int leftServoPin = 10, leftServoStart = 93, leftCurrentPosition = 93, leftServoRightBorder = 35, leftServoLeftBorder = 145;
-int turnTimeout = 10;
+int leftServoPin = 10, leftServoStart = 90, leftCurrentPosition = 90, leftServoRightBorder = 35, leftServoLeftBorder = 145;
+int turnTimeout = 20;
 
 void setup() {
   Serial.begin(9600);
@@ -62,10 +61,10 @@ void loop() {
   delay(10);
   vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0) / (R2 / (R1 + R2));
 
-  dataTelemetry[0] = 1;
+  dataTelemetry[0] = leftCurrentPosition;
   dataTelemetry[1] = rightCurrentPosition;
-  dataTelemetry[2] = leftMotorPersentage;
-  dataTelemetry[3] = rightMotorPersentage;
+  dataTelemetry[2] = leftServoStart;
+  dataTelemetry[3] = rightServoStart;
   dataTelemetry[4] = vin;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
@@ -76,9 +75,11 @@ void loop() {
     valueY = data[1];
     isTurn = data[3];
     valueSpeed = data[4];
-    isCorrectData = data[5];
+    isCorrectLeftServo = data[5];
+    isCorrectRightServo = data[6];
+    isForvardEngine = data[7];
 
-    if (isTurn == -1 && isCorrectData == -1) {
+    if (isTurn == -1 && isCorrectRightServo == -1 && isCorrectLeftServo == -1 && isForvardEngine == -1) {
       if (valueX == 0 && valueY == 0) {
         stopEngine();
       } else if (valueX == 0 && valueY == 10) {
@@ -98,16 +99,11 @@ void loop() {
         }
         backwardEngine();
       }
-    } else if (isTurn == -1 && isCorrectData == 1) {
-      if (valueX >= 8 && valueY == 0) {
-        rightEnginePowerChange();
-      } else if (valueX <= -8 && valueY == 0) {
-        leftEnginePowerChange();
-      } else if (valueX == 0 && valueY >= 8) {
-        enginePowerChangeToFull();
-      }
-
-    } else if (isTurn == 1 && isCorrectData == -1) {
+    } else if (isTurn == -1 && isCorrectRightServo == 1 && isCorrectLeftServo == -1 && isForvardEngine == -1) {
+      rightServoCentralPointChange();
+    } else if (isTurn == -1 && isCorrectRightServo == -1 && isCorrectLeftServo == 1 && isForvardEngine == -1) {
+      leftServoCentralPointChange();
+    } else if (isTurn == 1 && isCorrectRightServo == -1 && isCorrectLeftServo == -1 && isForvardEngine == -1) {
       if (valueX <= -8 && valueY == 0) {
         rightCurrentPosition = turnToRight(servoRight, rightCurrentPosition, rightServoRightBorder);
         leftCurrentPosition = turnToRight(servoLeft, leftCurrentPosition, leftServoRightBorder);
@@ -117,14 +113,16 @@ void loop() {
       } else if (valueY >= 8 && valueX == 0){
           weelsToCenter();
       }
-    } 
+    } else if (isTurn == -1 && isCorrectRightServo == -1 && isCorrectLeftServo == -1 && isForvardEngine == 1){
+      forwardEngine();
+    }
   }
 }
 
 
 void forwardEngine() {
-  analogWrite(enG1, valueSpeed * leftMotorPersentage / 100);
-  analogWrite(enG2, valueSpeed * rightMotorPersentage / 100);
+  analogWrite(enG1, valueSpeed);
+  analogWrite(enG2, valueSpeed);
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
   digitalWrite(in3, LOW);
@@ -132,8 +130,8 @@ void forwardEngine() {
 }
 
 void backwardEngine() {
-  analogWrite(enG1, valueSpeed * leftMotorPersentage / 100);
-  analogWrite(enG2, valueSpeed * rightMotorPersentage / 100);
+  analogWrite(enG1, valueSpeed);
+  analogWrite(enG2, valueSpeed);
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
   digitalWrite(in3, HIGH);
@@ -151,28 +149,20 @@ void stopEngine() {
   digitalWrite(in4, LOW);
 }
 
-void rightEnginePowerChange() {
-  if (rightMotorPersentage <= 100 && rightMotorPersentage > 50) {
-    rightMotorPersentage--;
+void rightServoCentralPointChange() {
+  if (valueSpeed > 80 && valueSpeed < 100){
+    rightServoStart = valueSpeed;
   } else {
-    rightMotorPersentage = 100;
-    delay(2000);
+    rightServoStart = 90;
   }
 }
 
-void leftEnginePowerChange() {
-  if (leftMotorPersentage <= 100 && leftMotorPersentage > 50) {
-    leftMotorPersentage--;
+void leftServoCentralPointChange() {
+  if (valueSpeed > 80 && valueSpeed < 100){
+    leftServoStart = valueSpeed;
   } else {
-    leftMotorPersentage = 100;
-    delay(2000);
+    leftServoStart = 90;
   }
-}
-
-void enginePowerChangeToFull() {
-  rightMotorPersentage = 100;
-  leftMotorPersentage = 100;
-  delay(2000);
 }
 
 int turnToLeft(Servo servo, int currentServoPosition, int servoLeftBorder) {
@@ -194,16 +184,22 @@ int turnToRight(Servo servo, int currentServoPosition, int servoRightBorder) {
 }
 
 void weelsToCenter(){
-  if(rightCurrentPosition < rightServoStart && leftCurrentPosition < leftServoStart){
+  if(rightCurrentPosition <= rightServoStart){
     rightCurrentPosition++;
-    leftCurrentPosition++;
     servoRight.write(rightCurrentPosition);
+    delay(turnTimeout);
+  } 
+  if (leftCurrentPosition <= leftServoStart){
+    leftCurrentPosition++;
     servoLeft.write(leftCurrentPosition);
     delay(turnTimeout);
-  } else if (rightCurrentPosition > rightServoStart && leftCurrentPosition > leftServoStart){
+  }
+  if (rightCurrentPosition >= rightServoStart+1){
     rightCurrentPosition--;
-    leftCurrentPosition--;
     servoRight.write(rightCurrentPosition);
+    delay(turnTimeout);
+  } if (leftCurrentPosition >= leftServoStart+1){
+    leftCurrentPosition--;
     servoLeft.write(leftCurrentPosition);
     delay(turnTimeout);
   }
