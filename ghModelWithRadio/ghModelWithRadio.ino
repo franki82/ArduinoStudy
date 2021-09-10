@@ -4,7 +4,7 @@
 #include <Wire.h>
 #include <Servo.h>
 
-Servo servoRight, servoLeft;
+Servo servoRight, servoLeft, servoPanarama;
 
 RF24 radio(A0, A1);
 int data[8], dataTelemetry[5];
@@ -21,9 +21,11 @@ int valueX, valueY, valueSpeed = 0, isTurn = -1, isCorrectRightServo = -1, isCor
 int analogVoltmeterInput = A2;
 int vin = 1;
 float R1 = 30000.0, R2 = 7500.0;
-int rightServoPin = 9, rightServoStart = 90, rightCurrentPosition = 90, rightServoRightBorder = 35, rightServoLeftBorder = 145;
-int leftServoPin = 10, leftServoStart = 90, leftCurrentPosition = 90, leftServoRightBorder = 35, leftServoLeftBorder = 145;
-int turnTimeout = 20;
+int rightServoPin = 9, rightServoStart = 92, rightCurrentPosition = 92, rightServoRightBorder = 45, rightServoLeftBorder = 135;
+int leftServoPin = 10, leftServoStart = 90, leftCurrentPosition = 90, leftServoRightBorder = 45, leftServoLeftBorder = 135;
+int turnTimeout = 10;
+int smallCorrectionRight = 0, smallCorrectionLeft = 0;
+int panaramaServoPin = 3, panaramaServoSpeed = 86;
 
 void setup() {
   Serial.begin(9600);
@@ -55,6 +57,10 @@ void setup() {
   delay(500);
   servoLeft.write(leftServoStart);
   delay(500);
+  servoPanarama.attach(panaramaServoPin);
+  delay(500);
+  servoPanarama.detach();
+  delay(500);
 }
 
 void loop() {
@@ -80,7 +86,12 @@ void loop() {
     isForvardEngine = data[7];
 
     if (isTurn == -1 && isCorrectRightServo == -1 && isCorrectLeftServo == -1 && isForvardEngine == -1) {
+      servoPanarama.detach();
       if (valueX == 0 && valueY == 0) {
+        if (smallCorrectionRight != 0 || smallCorrectionLeft !=0 ){
+          smallCorrectionRight = turnToCurrentServoPosition(servoRight, rightCurrentPosition);
+          smallCorrectionLeft = turnToCurrentServoPosition(servoLeft, leftCurrentPosition);
+        }
         stopEngine();
       } else if (valueX == 0 && valueY == 10) {
         forwardEngine();
@@ -98,12 +109,27 @@ void loop() {
           valueSpeed = 70;
         }
         backwardEngine();
+      } else if (valueX > 8 && valueY == 0){
+        if (smallCorrectionRight == 0 && smallCorrectionLeft == 0){
+          smallCorrectionRight = smallTurnToLeft(servoRight, rightCurrentPosition, rightServoLeftBorder);
+          smallCorrectionLeft = smallTurnToLeft(servoLeft, leftCurrentPosition, leftServoLeftBorder);
+       } 
+        forwardEngine();
+      }else if (valueX < -8 && valueY == 0){
+        if (smallCorrectionRight == 0 && smallCorrectionLeft == 0){
+          smallCorrectionRight = smallTurnToRight(servoRight, rightCurrentPosition, rightServoRightBorder);
+          smallCorrectionLeft = smallTurnToRight(servoLeft, leftCurrentPosition, leftServoRightBorder);
+        } 
+        forwardEngine();
       }
     } else if (isTurn == -1 && isCorrectRightServo == 1 && isCorrectLeftServo == -1 && isForvardEngine == -1) {
+      servoPanarama.detach();
       rightServoCentralPointChange();
     } else if (isTurn == -1 && isCorrectRightServo == -1 && isCorrectLeftServo == 1 && isForvardEngine == -1) {
+      servoPanarama.detach();
       leftServoCentralPointChange();
     } else if (isTurn == 1 && isCorrectRightServo == -1 && isCorrectLeftServo == -1 && isForvardEngine == -1) {
+      servoPanarama.detach();
       if (valueX <= -8 && valueY == 0) {
         rightCurrentPosition = turnToRight(servoRight, rightCurrentPosition, rightServoRightBorder);
         leftCurrentPosition = turnToRight(servoLeft, leftCurrentPosition, leftServoRightBorder);
@@ -114,7 +140,15 @@ void loop() {
           weelsToCenter();
       }
     } else if (isTurn == -1 && isCorrectRightServo == -1 && isCorrectLeftServo == -1 && isForvardEngine == 1){
+      servoPanarama.detach();
       forwardEngine();
+    } else if (isTurn == 1 && isCorrectRightServo == 1 && isCorrectLeftServo == 1 && isForvardEngine == -1){
+      if (valueX >= 7) {
+        servoPanarama.attach(panaramaServoPin);
+        servoPanarama.write(panaramaServoSpeed);
+      } else {
+        servoPanarama.detach();
+      } 
     }
   }
 }
@@ -203,4 +237,26 @@ void weelsToCenter(){
     servoLeft.write(leftCurrentPosition);
     delay(turnTimeout);
   }
+}
+
+int smallTurnToLeft(Servo servo, int currentServoPosition, int servoLeftBorder) {
+  if (currentServoPosition < servoLeftBorder) {
+     servo.write(currentServoPosition+5);
+     delay(turnTimeout);
+  }
+  return 5;
+}
+
+int smallTurnToRight(Servo servo, int currentServoPosition, int servoRightBorder) {
+  if (currentServoPosition > servoRightBorder) {
+     servo.write(currentServoPosition-5);
+     delay(turnTimeout);
+  }
+  return -5;
+}
+
+boolean turnToCurrentServoPosition(Servo servo, int currentServoPosition) {
+  servo.write(currentServoPosition);
+  delay(turnTimeout);
+  return 0;
 }
