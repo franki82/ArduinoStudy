@@ -19,13 +19,14 @@ int in4 = 8;
 
 int valueX, valueY, valueSpeed = 0, isTurn = -1, isCorrectRightServo = -1, isCorrectLeftServo = -1, isForvardEngine = -1;
 int analogVoltmeterInput = A2;
+int analogStopperButton = A3;
 int vin = 1;
 float R1 = 30000.0, R2 = 7500.0;
 int rightServoPin = 9, rightServoStart = 92, rightCurrentPosition = 92, rightServoRightBorder = 45, rightServoLeftBorder = 135;
 int leftServoPin = 10, leftServoStart = 90, leftCurrentPosition = 90, leftServoRightBorder = 45, leftServoLeftBorder = 135;
 int turnTimeout = 10;
 int smallCorrectionRight = 0, smallCorrectionLeft = 0;
-int panaramaServoPin = 3, panaramaServoSpeed = 86;
+int panaramaServoPin = 3, panaramaServoSpeed = 86, panaramaState = -1;
 
 void setup() {
   Serial.begin(9600);
@@ -48,6 +49,7 @@ void setup() {
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
   pinMode(analogVoltmeterInput, INPUT);
+  pinMode(analogStopperButton, INPUT_PULLUP);
 
   servoRight.attach(rightServoPin);
   delay(500);
@@ -66,7 +68,12 @@ void setup() {
 void loop() {
   delay(10);
   vin = ((analogRead(analogVoltmeterInput) * 50.0) / 1024.0) / (R2 / (R1 + R2));
-
+  int stopperState = analogRead(analogStopperButton);
+  if (stopperState > 100){
+    panaramaState = 1;
+  } else {
+    panaramaState = -1;
+  }
   dataTelemetry[0] = leftCurrentPosition;
   dataTelemetry[1] = rightCurrentPosition;
   dataTelemetry[2] = leftServoStart;
@@ -139,16 +146,16 @@ void loop() {
       } else if (valueY >= 8 && valueX == 0){
           weelsToCenter();
       }
-    } else if (isTurn == -1 && isCorrectRightServo == -1 && isCorrectLeftServo == -1 && isForvardEngine == 1){
-      servoPanarama.detach();
-      forwardEngine();
     } else if (isTurn == 1 && isCorrectRightServo == 1 && isCorrectLeftServo == 1 && isForvardEngine == -1){
-      if (valueX >= 7) {
+      if (panaramaState == 1 && valueX >= 7){
         servoPanarama.attach(panaramaServoPin);
         servoPanarama.write(panaramaServoSpeed);
-      } else {
+      } else if (panaramaState == -1 && valueX >= 7) {
+        servoPanarama.attach(panaramaServoPin);
+        servoPanarama.write(panaramaServoSpeed);
+      } else if (panaramaState == -1 && valueX < 7) {
         servoPanarama.detach();
-      } 
+      }
     }
   }
 }
