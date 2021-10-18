@@ -19,7 +19,6 @@ int analogVoltmeterInput = A2;
 int vin = 1; 
 float R1 = 20000.0, R2 = 10000.0;
 int leftMotorPersentage = 100, rightMotorPersentage = 100;
-int turnTimeout = 20;
 
 void setup() {
   Serial.begin(9600);
@@ -60,10 +59,10 @@ void loop() {
     radio.read(&data, sizeof(data));    
     valueX = data[0];
     valueY = data[1];
-    correctSpeed = data[3];
+    shortTurn = data[3];
     valueSpeed = data[4];
     correctTurn = data[5];
-    shortTurn = data[6];
+    correctSpeed = data[6];
     
     if (correctSpeed == -1 && correctTurn == -1){
         if (valueX == 0 && valueY == 0){
