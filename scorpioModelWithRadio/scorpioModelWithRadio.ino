@@ -8,7 +8,7 @@ RF24 radio(A0, A1);
 Ultrasonic ultrasonic(A3, A4);
 int data[8], dataTelemetry[5];
 
-int enG1 = 5;
+int enG1 = 5, enG2 = 9;
 
 int in1 = 2;
 int in2 = 4;
@@ -16,12 +16,13 @@ int in2 = 4;
 int in3 = 7;
 int in4 = 8;
 
-int valueX, valueY, valueSpeed = 0, lightTurn = -1, useCamera = -1;
+int valueX, valueY, valueSpeed = 0, lightTurn = -1, useCamera = -1, autoForward = -1, shortTurn = -1;
 int analogVoltmeterInput = A2;
 int vin = 1;
 int distance;
 float R1 = 30000.0, R2 = 7500.0;
 int digitalPowerLed = 6;
+int correctedPersMax = 40, correctedPersActual = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -37,9 +38,9 @@ void setup() {
   radio.startListening();
 
   pinMode(enG1, OUTPUT);
+  pinMode(enG2, OUTPUT);
   pinMode(in1, OUTPUT);
   pinMode(in2, OUTPUT);
-
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
   pinMode(digitalPowerLed, OUTPUT);
@@ -52,14 +53,11 @@ void loop() {
 
   dataTelemetry[0] = distance;
   dataTelemetry[1] = 1;
-  dataTelemetry[2] = 1;
+  dataTelemetry[2] = valueSpeed;
   dataTelemetry[3] = 1;
   dataTelemetry[4] = vin;
 
   radio.writeAckPayload(1, &dataTelemetry, sizeof(dataTelemetry));
-
-  //Serial.print("Distance:");
-  //Serial.println(distance);
 
   if (radio.available()) {
     radio.read(&data, sizeof(data));
@@ -68,6 +66,8 @@ void loop() {
     useCamera = data[2];
     lightTurn = data[3];
     valueSpeed = data[4];
+    shortTurn = data[5];
+    autoForward = data[7];
 
     if(lightTurn == 1){
       digitalWrite(digitalPowerLed, HIGH);
@@ -75,36 +75,45 @@ void loop() {
        digitalWrite(digitalPowerLed, LOW);
     }
 
-    if (valueX == 0 && valueY == 0) {
-      stopEngine();
-    } else if (valueX == 0 && valueY == 10) {
-      forwardEngine();
-    } else if (valueX == 0 && valueY == -10) {
-      backwardEngine();
-    } else if (valueX == 10 && valueY == 0) {
-      rightEngine();
-    } else if (valueX == -10 && valueY == 0) {
-      leftEngine();
-    } else if (valueX == 0 && valueY > 2 && valueY < 10) {
-      valueSpeed = valueSpeed * valueY / 10;
-      if (valueSpeed < 70) {
-        valueSpeed = 70;
+    if (autoForward == 1){
+      if (distance > 15){
+        forwardEngine();
+      } else{
+        stopEngine();
       }
-      forwardEngine();
-    } else if (valueX == 0 && valueY < -2 && valueY > -10) {
-      valueSpeed = valueSpeed * valueY / 10;
-      if (valueSpeed < 70) {
-        valueSpeed = 70;
+    } else {
+      if (valueX == 0 && valueY == 0) {
+        stopEngine();
+      } else if (valueX == 0 && valueY == 10) {
+        forwardEngine();
+      } else if (valueX == 0 && valueY == -10) {
+        backwardEngine();
+      } else if (valueX == 10 && valueY == 0) {
+        correctedPersActual = correctedPersMax;
+        rightEngine();
+      } else if (valueX == -10 && valueY == 0) {
+        correctedPersActual = correctedPersMax;
+        leftEngine();
+      } else if (valueX == 0 && valueY > 2 && valueY < 10) {
+        valueSpeed = valueSpeed * valueY / 10;
+        if (valueSpeed < 70) {
+          valueSpeed = 70;
+        }
+        forwardEngine();
+      } else if (valueX == 0 && valueY < -2 && valueY > -10) {
+        valueSpeed = valueSpeed * valueY / 10;
+        if (valueSpeed < 70) {
+          valueSpeed = 70;
+        }
+        backwardEngine();
       }
-      backwardEngine();
-    }
-    else if (valueY == 0 && valueX > 2 && valueX < 10) {
-      valueSpeed = valueSpeed * valueX / 10;
-      rightEngine();
-    } else if (valueY == 0 && valueX < -2 && valueX > -10) {
-      int absValueX = abs(valueX);
-      valueSpeed = valueSpeed * absValueX / 10;
-      leftEngine();
+      else if (valueY == 0 && valueX > 2 && valueX < 10) {
+        correctedPersActual = map(valueX, 2, 9, 100, correctedPersMax);
+        rightEngine();
+      } else if (valueY == 0 && valueX < -2 && valueX > -10) {
+        correctedPersActual = map(valueX, -2, -9, 100, correctedPersMax);
+        leftEngine();
+      }
     }
 
   }
@@ -113,6 +122,7 @@ void loop() {
 
 void forwardEngine() {
   analogWrite(enG1, valueSpeed);
+  analogWrite(enG2, valueSpeed);
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
   digitalWrite(in3, LOW);
@@ -121,6 +131,7 @@ void forwardEngine() {
 
 void backwardEngine() {
   analogWrite(enG1, valueSpeed);
+  analogWrite(enG2, valueSpeed);
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
   digitalWrite(in3, HIGH);
@@ -129,26 +140,48 @@ void backwardEngine() {
 
 
 void leftEngine() {
-  analogWrite(enG1, valueSpeed);
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, HIGH);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, HIGH);
+  if (shortTurn == 1){
+      analogWrite(enG1, valueSpeed);
+      analogWrite(enG2, valueSpeed);
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, HIGH);
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, HIGH);
+  } else{
+      int correctedValue = (valueSpeed * correctedPersActual)/100;
+      analogWrite(enG1, correctedValue);
+      analogWrite(enG2, valueSpeed);
+      digitalWrite(in1, HIGH);
+      digitalWrite(in2, LOW);
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, HIGH);
+    }
 }
 
 void rightEngine() {
-  analogWrite(enG1, valueSpeed);
-  digitalWrite(in1, HIGH);
-  digitalWrite(in2, LOW);
-  digitalWrite(in3, HIGH);
-  digitalWrite(in4, LOW);
+  if (shortTurn == 1){
+      analogWrite(enG1, valueSpeed);
+      analogWrite(enG2, valueSpeed);
+      digitalWrite(in1, HIGH);
+      digitalWrite(in2, LOW);
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
+  } else{
+      int correctedValue = (valueSpeed * correctedPersActual)/100;
+      analogWrite(enG1, valueSpeed);
+      analogWrite(enG2, correctedValue);
+      digitalWrite(in1, HIGH);
+      digitalWrite(in2, LOW);
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, HIGH);
+    }
 }
 
 void stopEngine() {
   analogWrite(enG1, 0);
+  analogWrite(enG2, 0);
   digitalWrite(in1, LOW);
   digitalWrite(in2, LOW);
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
 }
-
